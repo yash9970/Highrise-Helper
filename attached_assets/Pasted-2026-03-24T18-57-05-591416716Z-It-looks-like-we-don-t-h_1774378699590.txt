@@ -1,0 +1,156 @@
+2026-03-24T18:57:05.591416716Z ==> It looks like we don't have access to your repo, but we'll try to clone it anyway.
+2026-03-24T18:57:05.591455248Z ==> Cloning from https://github.com/yash9970/Highrise-Helper
+2026-03-24T18:57:06.293814187Z ==> Checking out commit 1902286b5bb070c6916ebd34b34f7ddba88945a0 in branch master
+2026-03-24T18:57:10.559195256Z ==> Installing Python version 3.14.3...
+2026-03-24T18:57:25.695933869Z ==> Using Python version 3.14.3 (default)
+2026-03-24T18:57:25.726050395Z ==> Docs on specifying a Python version: https://render.com/docs/python-version
+2026-03-24T18:57:29.675532935Z ==> Using Poetry version 2.1.3 (default)
+2026-03-24T18:57:29.787224125Z ==> Docs on specifying a Poetry version: https://render.com/docs/poetry-version
+2026-03-24T18:57:30.187861061Z ==> Using uv version 0.10.2 (default)
+2026-03-24T18:57:30.187892352Z ==> Docs on specifying a uv version: https://render.com/docs/uv-version
+2026-03-24T18:57:30.194916905Z ==> Installing uv version 0.10.2...
+2026-03-24T18:57:31.097419941Z ==> Running build command 'pip install -r requirements.txt'...
+2026-03-24T18:57:31.815934759Z Collecting highrise-bot-sdk>=24.1.0 (from -r requirements.txt (line 1))
+2026-03-24T18:57:31.896419767Z   Downloading highrise_bot_sdk-24.1.0-py3-none-any.whl.metadata (10 kB)
+2026-03-24T18:57:32.223487984Z Collecting flask>=3.1.3 (from -r requirements.txt (line 2))
+2026-03-24T18:57:32.232363774Z   Downloading flask-3.1.3-py3-none-any.whl.metadata (3.2 kB)
+2026-03-24T18:57:33.253392444Z Collecting aiohttp>=3.12.13 (from -r requirements.txt (line 3))
+2026-03-24T18:57:33.262102278Z   Downloading aiohttp-3.13.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (8.1 kB)
+2026-03-24T18:57:33.47451096Z Collecting cattrs==22.2.0 (from highrise-bot-sdk>=24.1.0->-r requirements.txt (line 1))
+2026-03-24T18:57:33.484179613Z   Downloading cattrs-22.2.0-py3-none-any.whl.metadata (9.0 kB)
+2026-03-24T18:57:33.571907264Z Collecting click>=8.1.3 (from highrise-bot-sdk>=24.1.0->-r requirements.txt (line 1))
+2026-03-24T18:57:33.581033884Z   Downloading click-8.3.1-py3-none-any.whl.metadata (2.6 kB)
+2026-03-24T18:57:33.782208988Z Collecting pendulum<3.0.0,>=2.1.2 (from highrise-bot-sdk>=24.1.0->-r requirements.txt (line 1))
+2026-03-24T18:57:33.791626851Z   Downloading pendulum-2.1.2.tar.gz (81 kB)
+2026-03-24T18:57:33.940229661Z   Installing build dependencies: started
+2026-03-24T18:57:35.561435812Z   Installing build dependencies: finished with status 'done'
+2026-03-24T18:57:35.562131801Z   Getting requirements to build wheel: started
+2026-03-24T18:57:35.78309743Z   Getting requirements to build wheel: finished with status 'done'
+2026-03-24T18:57:35.784211786Z   Preparing metadata (pyproject.toml): started
+2026-03-24T18:57:36.148201413Z   Preparing metadata (pyproject.toml): finished with status 'done'
+2026-03-24T18:57:36.523881627Z Collecting quattro<23.0.0,>=22.1.0 (from highrise-bot-sdk>=24.1.0->-r requirements.txt (line 1))
+2026-03-24T18:57:36.534076162Z   Downloading quattro-22.2.0-py3-none-any.whl.metadata (8.5 kB)
+2026-03-24T18:57:37.199413261Z Collecting typing_extensions<4.0.0 (from highrise-bot-sdk>=24.1.0->-r requirements.txt (line 1))
+2026-03-24T18:57:37.209667669Z   Downloading typing_extensions-3.10.0.2-py3-none-any.whl.metadata (2.1 kB)
+2026-03-24T18:57:37.26169659Z Collecting attrs>=20 (from cattrs==22.2.0->highrise-bot-sdk>=24.1.0->-r requirements.txt (line 1))
+2026-03-24T18:57:37.270621552Z   Downloading attrs-26.1.0-py3-none-any.whl.metadata (8.8 kB)
+2026-03-24T18:57:37.306744639Z Collecting python-dateutil<3.0,>=2.6 (from pendulum<3.0.0,>=2.1.2->highrise-bot-sdk>=24.1.0->-r requirements.txt (line 1))
+2026-03-24T18:57:37.316472115Z   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+2026-03-24T18:57:37.355870369Z Collecting pytzdata>=2020.1 (from pendulum<3.0.0,>=2.1.2->highrise-bot-sdk>=24.1.0->-r requirements.txt (line 1))
+2026-03-24T18:57:37.366148908Z   Downloading pytzdata-2020.1-py2.py3-none-any.whl.metadata (2.3 kB)
+2026-03-24T18:57:37.418915089Z Collecting six>=1.5 (from python-dateutil<3.0,>=2.6->pendulum<3.0.0,>=2.1.2->highrise-bot-sdk>=24.1.0->-r requirements.txt (line 1))
+2026-03-24T18:57:37.428484189Z   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+2026-03-24T18:57:37.470795644Z Collecting blinker>=1.9.0 (from flask>=3.1.3->-r requirements.txt (line 2))
+2026-03-24T18:57:37.47861938Z   Downloading blinker-1.9.0-py3-none-any.whl.metadata (1.6 kB)
+2026-03-24T18:57:37.528658788Z Collecting itsdangerous>=2.2.0 (from flask>=3.1.3->-r requirements.txt (line 2))
+2026-03-24T18:57:37.537864072Z   Downloading itsdangerous-2.2.0-py3-none-any.whl.metadata (1.9 kB)
+2026-03-24T18:57:37.584949006Z Collecting jinja2>=3.1.2 (from flask>=3.1.3->-r requirements.txt (line 2))
+2026-03-24T18:57:37.59414647Z   Downloading jinja2-3.1.6-py3-none-any.whl.metadata (2.9 kB)
+2026-03-24T18:57:37.677215676Z Collecting markupsafe>=2.1.1 (from flask>=3.1.3->-r requirements.txt (line 2))
+2026-03-24T18:57:37.685583185Z   Downloading markupsafe-3.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+2026-03-24T18:57:37.736374694Z Collecting werkzeug>=3.1.0 (from flask>=3.1.3->-r requirements.txt (line 2))
+2026-03-24T18:57:37.748516741Z   Downloading werkzeug-3.1.7-py3-none-any.whl.metadata (4.0 kB)
+2026-03-24T18:57:38.076470834Z Collecting aiohappyeyeballs>=2.5.0 (from aiohttp>=3.12.13->-r requirements.txt (line 3))
+2026-03-24T18:57:38.086138487Z   Downloading aiohappyeyeballs-2.6.1-py3-none-any.whl.metadata (5.9 kB)
+2026-03-24T18:57:38.40977711Z Collecting aiosignal>=1.4.0 (from aiohttp>=3.12.13->-r requirements.txt (line 3))
+2026-03-24T18:57:38.421262479Z   Downloading aiosignal-1.4.0-py3-none-any.whl.metadata (3.7 kB)
+2026-03-24T18:57:38.676747388Z Collecting frozenlist>=1.1.1 (from aiohttp>=3.12.13->-r requirements.txt (line 3))
+2026-03-24T18:57:38.686342089Z   Downloading frozenlist-1.8.0-cp314-cp314-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (20 kB)
+2026-03-24T18:57:39.054991419Z Collecting multidict<7.0,>=4.5 (from aiohttp>=3.12.13->-r requirements.txt (line 3))
+2026-03-24T18:57:39.064000185Z   Downloading multidict-6.7.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (5.3 kB)
+2026-03-24T18:57:39.326400553Z Collecting propcache>=0.2.0 (from aiohttp>=3.12.13->-r requirements.txt (line 3))
+2026-03-24T18:57:39.335638358Z   Downloading propcache-0.4.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (13 kB)
+2026-03-24T18:57:39.668653202Z Collecting yarl<2.0,>=1.17.0 (from aiohttp>=3.12.13->-r requirements.txt (line 3))
+2026-03-24T18:57:39.678396758Z   Downloading yarl-1.23.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (79 kB)
+2026-03-24T18:57:40.020635657Z Collecting idna>=2.0 (from yarl<2.0,>=1.17.0->aiohttp>=3.12.13->-r requirements.txt (line 3))
+2026-03-24T18:57:40.029752737Z   Downloading idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+2026-03-24T18:57:40.089347654Z Downloading highrise_bot_sdk-24.1.0-py3-none-any.whl (22 kB)
+2026-03-24T18:57:40.719229653Z Downloading cattrs-22.2.0-py3-none-any.whl (35 kB)
+2026-03-24T18:57:41.012800881Z Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+2026-03-24T18:57:41.37613043Z Downloading quattro-22.2.0-py3-none-any.whl (9.3 kB)
+2026-03-24T18:57:41.90920976Z Downloading typing_extensions-3.10.0.2-py3-none-any.whl (26 kB)
+2026-03-24T18:57:42.218133879Z Downloading flask-3.1.3-py3-none-any.whl (103 kB)
+2026-03-24T18:57:42.296433345Z Downloading aiohttp-3.13.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.7 MB)
+2026-03-24T18:57:42.800635021Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.7/1.7 MB 3.0 MB/s  0:00:00
+2026-03-24T18:57:42.811781626Z Downloading multidict-6.7.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (248 kB)
+2026-03-24T18:57:43.107403689Z Downloading yarl-1.23.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (101 kB)
+2026-03-24T18:57:43.580050589Z Downloading aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
+2026-03-24T18:57:44.05226922Z Downloading aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+2026-03-24T18:57:44.330624863Z Downloading attrs-26.1.0-py3-none-any.whl (67 kB)
+2026-03-24T18:57:44.670983713Z Downloading blinker-1.9.0-py3-none-any.whl (8.5 kB)
+2026-03-24T18:57:44.939827669Z Downloading click-8.3.1-py3-none-any.whl (108 kB)
+2026-03-24T18:57:45.149138731Z Downloading frozenlist-1.8.0-cp314-cp314-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+2026-03-24T18:57:45.546341252Z Downloading idna-3.11-py3-none-any.whl (71 kB)
+2026-03-24T18:57:45.705463851Z Downloading itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+2026-03-24T18:57:45.751743342Z Downloading jinja2-3.1.6-py3-none-any.whl (134 kB)
+2026-03-24T18:57:45.813614233Z Downloading markupsafe-3.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (23 kB)
+2026-03-24T18:57:45.877243158Z Downloading propcache-0.4.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (201 kB)
+2026-03-24T18:57:45.972720771Z Downloading pytzdata-2020.1-py2.py3-none-any.whl (489 kB)
+2026-03-24T18:57:46.080458836Z Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+2026-03-24T18:57:46.138907844Z Downloading werkzeug-3.1.7-py3-none-any.whl (226 kB)
+2026-03-24T18:57:46.248181513Z Building wheels for collected packages: pendulum
+2026-03-24T18:57:46.263301994Z   Building wheel for pendulum (pyproject.toml): started
+2026-03-24T18:57:46.643936884Z   Building wheel for pendulum (pyproject.toml): finished with status 'error'
+2026-03-24T18:57:46.648543086Z   error: subprocess-exited-with-error
+2026-03-24T18:57:46.648559206Z   
+2026-03-24T18:57:46.648564277Z   × Building wheel for pendulum (pyproject.toml) did not run successfully.
+2026-03-24T18:57:46.648581147Z   │ exit code: 1
+2026-03-24T18:57:46.648584268Z   ╰─> [44 lines of output]
+2026-03-24T18:57:46.648587508Z       The "poetry.dev-dependencies" section is deprecated and will be removed in a future version. Use "poetry.group.dev.dependencies" instead.
+2026-03-24T18:57:46.648590028Z       Traceback (most recent call last):
+2026-03-24T18:57:46.648593138Z         File "/tmp/pip-install-i0lqalji/pendulum_eec95059e4ce424c83447653aa188e36/build.py", line 5, in <module>
+2026-03-24T18:57:46.648595848Z           from distutils.command.build_ext import build_ext
+2026-03-24T18:57:46.648598218Z       ModuleNotFoundError: No module named 'distutils'
+2026-03-24T18:57:46.648600688Z       Traceback (most recent call last):
+2026-03-24T18:57:46.648603868Z         File "/opt/render/project/src/.venv/lib/python3.14/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 389, in <module>
+2026-03-24T18:57:46.648606288Z           main()
+2026-03-24T18:57:46.648608789Z           ~~~~^^
+2026-03-24T18:57:46.648611329Z         File "/opt/render/project/src/.venv/lib/python3.14/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 373, in main
+2026-03-24T18:57:46.648613799Z           json_out["return_val"] = hook(**hook_input["kwargs"])
+2026-03-24T18:57:46.648616199Z                                    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24T18:57:46.648618649Z         File "/opt/render/project/src/.venv/lib/python3.14/site-packages/pip/_vendor/pyproject_hooks/_in_process/_in_process.py", line 280, in build_wheel
+2026-03-24T18:57:46.648621139Z           return _build_backend().build_wheel(
+2026-03-24T18:57:46.648623559Z                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+2026-03-24T18:57:46.648626089Z               wheel_directory, config_settings, metadata_directory
+2026-03-24T18:57:46.648628589Z               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24T18:57:46.648631049Z           )
+2026-03-24T18:57:46.64863347Z           ^
+2026-03-24T18:57:46.64863642Z         File "/tmp/pip-build-env-zr6wavqn/overlay/lib/python3.14/site-packages/poetry/core/masonry/api.py", line 58, in build_wheel
+2026-03-24T18:57:46.6486389Z           return WheelBuilder.make_in(
+2026-03-24T18:57:46.64864132Z                  ~~~~~~~~~~~~~~~~~~~~^
+2026-03-24T18:57:46.64864382Z               poetry,
+2026-03-24T18:57:46.6486463Z               ^^^^^^^
+2026-03-24T18:57:46.64864875Z           ...<2 lines>...
+2026-03-24T18:57:46.64865119Z               config_settings=config_settings,
+2026-03-24T18:57:46.64865365Z               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24T18:57:46.648656111Z           )
+2026-03-24T18:57:46.648658541Z           ^
+2026-03-24T18:57:46.648661031Z         File "/tmp/pip-build-env-zr6wavqn/overlay/lib/python3.14/site-packages/poetry/core/masonry/builders/wheel.py", line 95, in make_in
+2026-03-24T18:57:46.648663471Z           wb.build(target_dir=directory)
+2026-03-24T18:57:46.648665931Z           ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24T18:57:46.648671131Z         File "/tmp/pip-build-env-zr6wavqn/overlay/lib/python3.14/site-packages/poetry/core/masonry/builders/wheel.py", line 134, in build
+2026-03-24T18:57:46.648673661Z           self._build(zip_file)
+2026-03-24T18:57:46.648676102Z           ~~~~~~~~~~~^^^^^^^^^^
+2026-03-24T18:57:46.648678582Z         File "/tmp/pip-build-env-zr6wavqn/overlay/lib/python3.14/site-packages/poetry/core/masonry/builders/wheel.py", line 183, in _build
+2026-03-24T18:57:46.648681072Z           self._run_build_script(self._package.build_script)
+2026-03-24T18:57:46.648683512Z           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24T18:57:46.648685962Z         File "/tmp/pip-build-env-zr6wavqn/overlay/lib/python3.14/site-packages/poetry/core/masonry/builders/wheel.py", line 304, in _run_build_script
+2026-03-24T18:57:46.648693302Z           subprocess.check_call([self.executable.as_posix(), build_script])
+2026-03-24T18:57:46.648697992Z           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24T18:57:46.648702023Z         File "/opt/render/project/python/Python-3.14.3/lib/python3.14/subprocess.py", line 419, in check_call
+2026-03-24T18:57:46.648706083Z           raise CalledProcessError(retcode, cmd)
+2026-03-24T18:57:46.648710143Z       subprocess.CalledProcessError: Command '['/opt/render/project/src/.venv/bin/python3.14', 'build.py']' returned non-zero exit status 1.
+2026-03-24T18:57:46.648714463Z       [end of output]
+2026-03-24T18:57:46.648718523Z   
+2026-03-24T18:57:46.648723153Z   note: This error originates from a subprocess, and is likely not a problem with pip.
+2026-03-24T18:57:46.649157451Z   ERROR: Failed building wheel for pendulum
+2026-03-24T18:57:46.649498276Z Failed to build pendulum
+2026-03-24T18:57:46.85118739Z 
+2026-03-24T18:57:46.851216261Z [notice] A new release of pip is available: 25.3 -> 26.0.1
+2026-03-24T18:57:46.851221092Z [notice] To update, run: pip install --upgrade pip
+2026-03-24T18:57:46.852997456Z error: failed-wheel-build-for-install
+2026-03-24T18:57:46.853009026Z 
+2026-03-24T18:57:46.853013396Z × Failed to build installable wheels for some pyproject.toml based projects
+2026-03-24T18:57:46.853015586Z ╰─> pendulum
+2026-03-24T18:57:47.631432171Z ==> Build failed 😞
+2026-03-24T18:57:47.723256232Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys
