@@ -1,0 +1,50 @@
+2026-03-24T19:10:12.707712674Z Using cached flask-3.1.3-py3-none-any.whl (103 kB)
+2026-03-24T19:10:12.709421615Z Using cached typing_extensions-3.10.0.2-py3-none-any.whl (26 kB)
+2026-03-24T19:10:12.710983572Z Using cached aiohttp-3.12.13-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (1.7 MB)
+2026-03-24T19:10:12.715609781Z Using cached aiosignal-1.3.2-py2.py3-none-any.whl (7.6 kB)
+2026-03-24T19:10:12.717081276Z Using cached aiohappyeyeballs-2.6.1-py3-none-any.whl (15 kB)
+2026-03-24T19:10:12.718587401Z Using cached attrs-26.1.0-py3-none-any.whl (67 kB)
+2026-03-24T19:10:12.720242091Z Using cached blinker-1.9.0-py3-none-any.whl (8.5 kB)
+2026-03-24T19:10:12.721756506Z Using cached click-8.3.1-py3-none-any.whl (108 kB)
+2026-03-24T19:10:12.723446266Z Using cached frozenlist-1.8.0-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (231 kB)
+2026-03-24T19:10:12.725372792Z Using cached itsdangerous-2.2.0-py3-none-any.whl (16 kB)
+2026-03-24T19:10:12.726883928Z Using cached jinja2-3.1.6-py3-none-any.whl (134 kB)
+2026-03-24T19:10:12.72868013Z Using cached markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+2026-03-24T19:10:12.730201336Z Using cached multidict-6.7.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (246 kB)
+2026-03-24T19:10:12.732210084Z Using cached propcache-0.4.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (210 kB)
+2026-03-24T19:10:12.734116039Z Using cached quattro-22.2.0-py3-none-any.whl (9.3 kB)
+2026-03-24T19:10:12.735600964Z Using cached werkzeug-3.1.7-py3-none-any.whl (226 kB)
+2026-03-24T19:10:12.737536789Z Using cached yarl-1.23.0-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (102 kB)
+2026-03-24T19:10:12.739199699Z Using cached idna-3.11-py3-none-any.whl (71 kB)
+2026-03-24T19:10:12.740854158Z Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+2026-03-24T19:10:12.742772404Z Using cached pytzdata-2020.1-py2.py3-none-any.whl (489 kB)
+2026-03-24T19:10:12.745218041Z Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+2026-03-24T19:10:12.847781818Z Installing collected packages: typing_extensions, six, quattro, pytzdata, propcache, multidict, markupsafe, itsdangerous, idna, frozenlist, click, blinker, attrs, aiohappyeyeballs, yarl, werkzeug, python-dateutil, jinja2, cattrs, aiosignal, pendulum, flask, aiohttp, highrise-bot-sdk
+2026-03-24T19:10:14.221401667Z Successfully installed aiohappyeyeballs-2.6.1 aiohttp-3.12.13 aiosignal-1.3.2 attrs-26.1.0 blinker-1.9.0 cattrs-22.2.0 click-8.3.1 flask-3.1.3 frozenlist-1.8.0 highrise-bot-sdk-24.1.0 idna-3.11 itsdangerous-2.2.0 jinja2-3.1.6 markupsafe-3.0.3 multidict-6.7.1 pendulum-2.1.2 propcache-0.4.1 python-dateutil-2.9.0.post0 pytzdata-2020.1 quattro-22.2.0 six-1.17.0 typing_extensions-3.10.0.2 werkzeug-3.1.7 yarl-1.23.0
+2026-03-24T19:10:14.282003381Z 
+2026-03-24T19:10:14.282026671Z [notice] A new release of pip is available: 24.0 -> 26.0.1
+2026-03-24T19:10:14.282030882Z [notice] To update, run: pip install --upgrade pip
+2026-03-24T19:10:24.547725048Z ==> Uploading build...
+2026-03-24T19:10:39.155687919Z ==> Uploaded in 11.1s. Compression took 3.5s
+2026-03-24T19:10:39.23053848Z ==> Build successful 🎉
+2026-03-24T19:10:45.338637795Z ==> Deploying...
+2026-03-24T19:10:45.409440516Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-03-24T19:11:10.682560396Z ==> Running 'python bot/main.py'
+2026-03-24T19:11:17.472567165Z [KEEP-ALIVE] Web server started on port 10000
+2026-03-24T19:11:17.472601706Z [MAIN] ZenBot starting for room: 668faaff8bc7f7277cba7808
+2026-03-24T19:11:17.472605747Z [MAIN] Starting bot (attempt #1)...
+2026-03-24T19:11:17.472608556Z  * Serving Flask app 'keep_alive'
+2026-03-24T19:11:17.472686389Z  * Debug mode: off
+2026-03-24T19:11:17.476866498Z WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+2026-03-24T19:11:17.476880078Z  * Running on all addresses (0.0.0.0)
+2026-03-24T19:11:17.476883199Z  * Running on http://127.0.0.1:10000
+2026-03-24T19:11:17.476886119Z  * Running on http://10.17.194.144:10000
+2026-03-24T19:11:17.476902089Z Press CTRL+C to quit
+2026-03-24T19:11:17.785079551Z 127.0.0.1 - - [24/Mar/2026 19:11:17] "HEAD / HTTP/1.1" 200 -
+2026-03-24T19:11:28.626541064Z ==> Your service is live 🎉
+2026-03-24T19:11:28.780718822Z ==> 
+2026-03-24T19:11:28.782746238Z ==> ///////////////////////////////////////////////////////////
+2026-03-24T19:11:28.784809877Z ==> 
+2026-03-24T19:11:28.786669791Z ==> Available at your primary URL https://highrise-helper.onrender.com
+2026-03-24T19:11:28.788893823Z ==> 
+2026-03-24T19:11:28.791173108Z ==> ///////////////////////////////////////////////////////////
