@@ -1,0 +1,50 @@
+2026-03-24T19:08:40.721540548Z  * Running on http://127.0.0.1:10000
+2026-03-24T19:08:40.721544248Z  * Running on http://10.21.51.171:10000
+2026-03-24T19:08:40.721549299Z Press CTRL+C to quit
+2026-03-24T19:10:45.338637795Z ==> Deploying...
+2026-03-24T19:10:45.409440516Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-03-24T19:11:17.472567165Z [KEEP-ALIVE] Web server started on port 10000
+2026-03-24T19:11:17.472601706Z [MAIN] ZenBot starting for room: 668faaff8bc7f7277cba7808
+2026-03-24T19:11:17.472605747Z [MAIN] Starting bot (attempt #1)...
+2026-03-24T19:11:17.472608556Z  * Serving Flask app 'keep_alive'
+2026-03-24T19:11:17.472686389Z  * Debug mode: off
+2026-03-24T19:11:17.476866498Z WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+2026-03-24T19:11:17.476880078Z  * Running on all addresses (0.0.0.0)
+2026-03-24T19:11:17.476883199Z  * Running on http://127.0.0.1:10000
+2026-03-24T19:11:17.476886119Z  * Running on http://10.17.194.144:10000
+2026-03-24T19:11:17.476902089Z Press CTRL+C to quit
+2026-03-24T19:11:17.785079551Z 127.0.0.1 - - [24/Mar/2026 19:11:17] "HEAD / HTTP/1.1" 200 -
+2026-03-24T19:11:28.626541064Z ==> Your service is live 🎉
+2026-03-24T19:11:28.780718822Z ==> 
+2026-03-24T19:11:28.782746238Z ==> ///////////////////////////////////////////////////////////
+2026-03-24T19:11:28.784809877Z ==> 
+2026-03-24T19:11:28.786669791Z ==> Available at your primary URL https://highrise-helper.onrender.com
+2026-03-24T19:11:28.788893823Z ==> 
+2026-03-24T19:11:28.791173108Z ==> ///////////////////////////////////////////////////////////
+2026-03-24T19:11:29.48840412Z 127.0.0.1 - - [24/Mar/2026 19:11:29] "GET / HTTP/1.1" 200 -
+2026-03-24T19:16:24.18438653Z ==> Detected service running on port 10000
+2026-03-24T19:16:24.266695234Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
+2026-03-24T19:20:42.984567819Z ==> Deploying...
+2026-03-24T19:20:43.047698486Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-03-24T19:21:09.63422589Z ==> Running 'python bot/main.py'
+2026-03-24T19:21:15.041521105Z [KEEP-ALIVE] Web server started on port 10000
+2026-03-24T19:21:15.041547025Z [MAIN] ZenBot starting for room: 668faaff8bc7f7277cba7808
+2026-03-24T19:21:15.041550125Z [MAIN] Starting bot (attempt #1)...
+2026-03-24T19:21:15.041552906Z  * Serving Flask app 'keep_alive'
+2026-03-24T19:21:15.042067131Z  * Debug mode: off
+2026-03-24T19:21:15.134710063Z WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+2026-03-24T19:21:15.134745344Z  * Running on all addresses (0.0.0.0)
+2026-03-24T19:21:15.134748494Z  * Running on http://127.0.0.1:10000
+2026-03-24T19:21:15.134750905Z  * Running on http://10.16.233.89:10000
+2026-03-24T19:21:15.134754485Z Press CTRL+C to quit
+2026-03-24T19:21:15.932335067Z 127.0.0.1 - - [24/Mar/2026 19:21:15] "HEAD / HTTP/1.1" 200 -
+2026-03-24T19:21:26.101363668Z ==> Your service is live 🎉
+2026-03-24T19:21:26.191980837Z 127.0.0.1 - - [24/Mar/2026 19:21:26] "GET / HTTP/1.1" 200 -
+2026-03-24T19:21:26.235968655Z ==> 
+2026-03-24T19:21:26.238099749Z ==> ///////////////////////////////////////////////////////////
+2026-03-24T19:21:26.240374964Z ==> 
+2026-03-24T19:21:26.24239356Z ==> Available at your primary URL https://highrise-helper.onrender.com
+2026-03-24T19:21:26.244524204Z ==> 
+2026-03-24T19:21:26.246792219Z ==> ///////////////////////////////////////////////////////////
+2026-03-24T19:26:25.089425378Z ==> Detected service running on port 10000
+2026-03-24T19:26:25.159509959Z ==> Docs on specifying a port: https://render.com/docs/web-services#port-binding
