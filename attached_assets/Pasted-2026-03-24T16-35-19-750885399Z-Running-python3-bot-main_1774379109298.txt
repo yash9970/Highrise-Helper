@@ -1,0 +1,43 @@
+2026-03-24T16:35:19.750885399Z ==> Running 'python3 bot/main.py'
+2026-03-24T16:35:26.198368328Z   + Exception Group Traceback (most recent call last):
+2026-03-24T16:35:26.198377758Z Starting bot with Room ID: 668faaff8bc7f7277cba7808
+2026-03-24T16:35:26.198392519Z   |   File "/opt/render/project/src/bot/main.py", line 566, in <module>
+2026-03-24T16:35:26.198400359Z Health server will run on port 10000
+2026-03-24T16:35:26.198403549Z Health server running on port 10000
+2026-03-24T16:35:26.198407299Z Bot started! Room: good vibes 
+2026-03-24T16:35:26.198411359Z VIP users loaded: set()
+2026-03-24T16:35:26.198696637Z   |     asyncio.run(run_all(definitions, port))
+2026-03-24T16:35:26.198716137Z   |   File "/opt/render/project/python/Python-3.11.0/lib/python3.11/asyncio/runners.py", line 190, in run
+2026-03-24T16:35:26.198868832Z   |     return runner.run(main)
+2026-03-24T16:35:26.198890342Z   |            ^^^^^^^^^^^^^^^^
+2026-03-24T16:35:26.198897122Z   |   File "/opt/render/project/python/Python-3.11.0/lib/python3.11/asyncio/runners.py", line 118, in run
+2026-03-24T16:35:26.199005485Z   |     return self._loop.run_until_complete(task)
+2026-03-24T16:35:26.199015085Z   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2026-03-24T16:35:26.199018476Z   |   File "/opt/render/project/python/Python-3.11.0/lib/python3.11/asyncio/base_events.py", line 650, in run_until_complete
+2026-03-24T16:35:26.199254712Z   |     return future.result()
+2026-03-24T16:35:26.199263912Z   |            ^^^^^^^^^^^^^^^
+2026-03-24T16:35:26.199267842Z   |   File "/opt/render/project/src/bot/main.py", line 540, in run_all
+2026-03-24T16:35:26.199518599Z   |     await asyncio.gather(
+2026-03-24T16:35:26.199526379Z   |   File "/opt/render/project/src/.venv/lib/python3.11/site-packages/highrise/__main__.py", line 93, in main
+2026-03-24T16:35:26.199643922Z   |     async with TaskGroup() as tg:
+2026-03-24T16:35:26.199653802Z   |   File "/opt/render/project/python/Python-3.11.0/lib/python3.11/asyncio/taskgroups.py", line 135, in __aexit__
+2026-03-24T16:35:26.199763045Z   |     raise me from None
+2026-03-24T16:35:26.199769045Z   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2026-03-24T16:35:26.199772966Z   +-+---------------- 1 ----------------
+2026-03-24T16:35:26.199776646Z     | Exception Group Traceback (most recent call last):
+2026-03-24T16:35:26.199784476Z     |   File "/opt/render/project/src/.venv/lib/python3.11/site-packages/highrise/__main__.py", line 106, in bot_runner
+2026-03-24T16:35:26.199896059Z     |     async with TaskGroup() as tg:
+2026-03-24T16:35:26.199901959Z     |   File "/opt/render/project/python/Python-3.11.0/lib/python3.11/asyncio/taskgroups.py", line 135, in __aexit__
+2026-03-24T16:35:26.200016862Z     |     raise me from None
+2026-03-24T16:35:26.200021722Z     | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+2026-03-24T16:35:26.200024852Z     +-+---------------- 1 ----------------
+2026-03-24T16:35:26.200028082Z       | Traceback (most recent call last):
+2026-03-24T16:35:26.200031112Z       |   File "/opt/render/project/src/bot/main.py", line 139, in on_start
+2026-03-24T16:35:26.200188117Z       |     await self.highrise.walk_to(BOT_POSITION)
+2026-03-24T16:35:26.200193727Z       |   File "/opt/render/project/src/.venv/lib/python3.11/site-packages/highrise/__init__.py", line 226, in walk_to
+2026-03-24T16:35:26.20031737Z       |     await _do_req_no_resp(self, FloorHitRequest(destination))
+2026-03-24T16:35:26.201610954Z       |   File "/opt/render/project/src/.venv/lib/python3.11/site-packages/highrise/__init__.py", line 470, in _do_req_no_resp
+2026-03-24T16:35:26.201621345Z       |     raise ResponseError(resp.message)
+2026-03-24T16:35:26.201624335Z       | highrise.ResponseError: Not in room.
+2026-03-24T16:35:26.201642526Z       +------------------------------------
+2026-03-24T16:35:33.705035909Z ==> Running 'python3 bot/main.py'
