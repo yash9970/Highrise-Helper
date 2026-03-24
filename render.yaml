@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: zenbot-highrise
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot/main.py
+    envVars:
+      - key: HIGHRISE_TOKEN
+        sync: false
+      - key: HIGHRISE_ROOM_ID
+        sync: false
+    healthCheckPath: /ping
