@@ -2,10 +2,13 @@ import asyncio
 import random
 import json
 import os
-from datetime import datetime
 from pathlib import Path
 from highrise import BaseBot, Highrise
 from highrise.models import Position, SessionMetadata, User
+
+from vip_store import (
+    load_vips, save_vips, is_vip, add_vip, remove_vip, now_str
+)
 
 MASTER_USERNAME = "Zen1thos"
 
@@ -54,76 +57,33 @@ SONGS = [
     {"title": "Heat Waves", "artist": "Glass Animals"},
 ]
 
-VIP_FILE = Path("bot/vip_users.json")
-
-
-def load_vip_data() -> dict:
-    """Load full VIP data: {username: {added_by, added_at, history: [...]}}"""
-    if VIP_FILE.exists():
-        try:
-            with open(VIP_FILE, "r") as f:
-                data = json.load(f)
-            # Migrate old flat format {username: True} to new format
-            migrated = {}
-            for k, v in data.items():
-                if isinstance(v, dict):
-                    migrated[k] = v
-                else:
-                    migrated[k] = {
-                        "added_by": "Unknown",
-                        "added_at": "Unknown",
-                        "history": [{"action": "added", "by": "Unknown", "at": "Unknown"}],
-                    }
-            return migrated
-        except Exception:
-            pass
-    return {}
-
-
-def save_vip_data(vip_data: dict):
-    try:
-        with open(VIP_FILE, "w") as f:
-            json.dump(vip_data, f, indent=2)
-    except Exception as e:
-        print(f"[BOT] Warning: could not save VIP list: {e}")
-
-
-def now_str() -> str:
-    return datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
-
 
 def is_master(user: User) -> bool:
     return user.username.lower() == MASTER_USERNAME.lower()
 
 
-def is_vip(username: str, vip_data: dict) -> bool:
-    return username.lower() in [u.lower() for u in vip_data.keys()]
-
-
 class HigrhiseBot(BaseBot):
     def __init__(self):
         self.current_song_index = 0
-        self.vip_data: dict = load_vip_data()
+        self.vip_data: dict = load_vips()
         self.my_position = DEFAULT_POS
+        print(f"[BOT] Loaded {len(self.vip_data)} VIPs from storage: {list(self.vip_data.keys())}")
 
-    # ─── Safe helpers ───────────────────────────────────────────────────────────
+    # ─── Safe helpers ────────────────────────────────────────────────────────
 
     async def safe_chat(self, message: str):
-        """Send a chat message, silently ignore failures."""
         try:
             await self.highrise.chat(message)
         except Exception as e:
             print(f"[BOT] chat error: {e}")
 
     async def safe_emote(self, emote_id: str, target_id: str | None = None):
-        """Send an emote, silently ignore failures."""
         try:
             await self.highrise.send_emote(emote_id, target_id)
         except Exception as e:
             print(f"[BOT] emote error: {e}")
 
-    async def safe_walk_to(self, pos: Position, retries: int = 5, delay: float = 3.0):
-        """Walk to a position with retries. Never crashes the bot."""
+    async def safe_walk_to(self, pos: Position, retries: int = 5, delay: float = 5.0):
         for attempt in range(retries):
             try:
                 await self.highrise.walk_to(pos)
@@ -136,18 +96,31 @@ class HigrhiseBot(BaseBot):
         print("[BOT] walk_to gave up after all retries.")
 
     async def safe_teleport(self, user_id: str, pos: Position):
-        """Teleport a user, silently ignore failures."""
         try:
             await self.highrise.teleport(user_id, pos)
         except Exception as e:
             print(f"[BOT] teleport error: {e}")
 
-    # ─── Lifecycle events ────────────────────────────────────────────────────────
+    # ─── Keepalive loop ──────────────────────────────────────────────────────
+    # Highrise disconnects idle bots. We send a whisper to ourselves every
+    # 60 seconds to keep the WebSocket alive.
+
+    async def _keepalive_loop(self):
+        while True:
+            await asyncio.sleep(60)
+            try:
+                await self.highrise.get_room_users()
+                print("[BOT] Keepalive ping sent.")
+            except Exception as e:
+                print(f"[BOT] Keepalive error: {e}")
+
+    # ─── Lifecycle ───────────────────────────────────────────────────────────
+
+    async def before_start(self, tg) -> None:
+        tg.create_task(self._keepalive_loop())
 
     async def on_start(self, session_metadata: SessionMetadata) -> None:
         print(f"[BOT] Connected! Bot ID: {session_metadata.user_id}")
-        # Wait 8 seconds — Highrise needs time to fully load the bot into the room
-        # before any position or chat commands will work. Do NOT reduce this.
         await asyncio.sleep(8)
         await self.safe_walk_to(DEFAULT_POS, retries=5, delay=5.0)
         await self.safe_chat("🤖 ZenBot is online! Type !help for commands.")
@@ -190,62 +163,15 @@ class HigrhiseBot(BaseBot):
         except Exception as e:
             print(f"[BOT] on_chat error for '{message}': {e}")
 
-    # ─── Command handler ─────────────────────────────────────────────────────────
+    # ─── Commands ────────────────────────────────────────────────────────────
 
     async def _handle_command(self, user: User, msg: str):
         msg_lower = msg.lower()
 
+        # ── Everyone ──────────────────────────────────────────────────────
+
         if msg_lower == "!hi":
             await self.safe_chat(random.choice(RANDOM_HI))
-
-        elif msg_lower == "!pos":
-            if is_master(user):
-                try:
-                    resp = await self.highrise.get_room_users()
-                    if hasattr(resp, "content"):
-                        for room_user, pos in resp.content:
-                            if room_user.username.lower() == MASTER_USERNAME.lower():
-                                await self.safe_chat(
-                                    f"Master, you are at: x={pos.x:.1f}, y={pos.y:.2f}, z={pos.z:.1f} 📍"
-                                )
-                                return
-                    await self.safe_chat("Master, I couldn't pinpoint your location right now!")
-                except Exception as e:
-                    print(f"[BOT] !pos error: {e}")
-                    await self.safe_chat("Master, something went wrong fetching your position!")
-            else:
-                await self.safe_chat(f"@{user.username} That command is reserved for Master only! 🚫")
-
-        elif msg_lower.startswith("!emote "):
-            emote_name = msg[7:].strip()
-            if emote_name:
-                await self.safe_emote(f"emote-{emote_name}", user.id)
-            else:
-                await self.safe_chat(f"@{user.username} Usage: !emote wave")
-
-        elif msg_lower == "!tele":
-            if is_master(user):
-                try:
-                    resp = await self.highrise.get_room_users()
-                    if hasattr(resp, "content"):
-                        for room_user, pos in resp.content:
-                            if room_user.username.lower() == MASTER_USERNAME.lower():
-                                await self.safe_walk_to(pos)
-                                await self.safe_chat("Teleporting to your side, Master! 🚀")
-                                return
-                    await self.safe_chat("Master, I couldn't find your location!")
-                except Exception as e:
-                    print(f"[BOT] !tele error: {e}")
-                    await self.safe_chat("Master, something went wrong!")
-            else:
-                await self.safe_chat(f"@{user.username} That command is reserved for Master only! 🚫")
-
-        elif msg_lower == "!home":
-            if is_master(user):
-                await self.safe_walk_to(DEFAULT_POS)
-                await self.safe_chat("Returning to my post! 🏠")
-            else:
-                await self.safe_chat(f"@{user.username} Only Master can move me! 🚫")
 
         elif msg_lower == "!help":
             help_text = (
@@ -259,7 +185,7 @@ class HigrhiseBot(BaseBot):
                 "!f0 — VIP: go to ground floor\n"
                 "[Master only]:\n"
                 "!pos !tele !home\n"
-                "!addvip !removevip !viplist\n"
+                "!addvip / !removevip / !viplist\n"
                 "!viphistory / !viphistory <name>"
             )
             await self.safe_chat(help_text)
@@ -279,146 +205,6 @@ class HigrhiseBot(BaseBot):
                 marker = "▶️" if i == self.current_song_index % len(SONGS) else f"{i+1}."
                 lines.append(f"{marker} {s['title']} - {s['artist']}")
             await self.safe_chat("\n".join(lines))
-
-        elif msg_lower == "!vip":
-            if is_vip(user.username, self.vip_data) or is_master(user):
-                await self.safe_teleport(user.id, VIP_FLOOR_POS)
-                await self.safe_chat(f"✨ Welcome to the VIP floor, @{user.username}!")
-            else:
-                await self.safe_chat(
-                    f"@{user.username} You're not a VIP! Ask Master {MASTER_USERNAME} to grant VIP access! 💎"
-                )
-
-        elif msg_lower == "!f0":
-            if is_vip(user.username, self.vip_data) or is_master(user):
-                await self.safe_teleport(user.id, GROUND_FLOOR_POS)
-                await self.safe_chat(f"🚀 Teleporting @{user.username} to the ground floor!")
-            else:
-                await self.safe_chat(f"@{user.username} VIP only command! 🚫")
-
-        elif msg_lower.startswith("!addvip "):
-            if is_master(user):
-                target = msg[8:].strip().lstrip("@")
-                if target:
-                    already = is_vip(target, self.vip_data)
-                    entry = self.vip_data.get(target, {
-                        "added_by": user.username,
-                        "added_at": now_str(),
-                        "history": [],
-                    })
-                    entry["history"].append({
-                        "action": "added",
-                        "by": user.username,
-                        "at": now_str(),
-                    })
-                    entry["added_by"] = user.username
-                    entry["added_at"] = now_str()
-                    self.vip_data[target] = entry
-                    save_vip_data(self.vip_data)
-                    if already:
-                        await self.safe_chat(f"@{target} is already a VIP — history updated!")
-                    else:
-                        await self.safe_chat(f"✨ @{target} has been granted VIP status by {user.username}!")
-                else:
-                    await self.safe_chat("Usage: !addvip <username>")
-            else:
-                await self.safe_chat(f"@{user.username} Only Master can manage VIPs! 🚫")
-
-        elif msg_lower.startswith("!removevip "):
-            if is_master(user):
-                target = msg[11:].strip().lstrip("@")
-                removed_key = None
-                for key in list(self.vip_data.keys()):
-                    if key.lower() == target.lower():
-                        removed_key = key
-                        break
-                if removed_key:
-                    self.vip_data[removed_key]["history"].append({
-                        "action": "removed",
-                        "by": user.username,
-                        "at": now_str(),
-                    })
-                    save_vip_data(self.vip_data)
-                    del self.vip_data[removed_key]
-                    save_vip_data(self.vip_data)
-                    await self.safe_chat(f"@{target} VIP status removed by {user.username}.")
-                else:
-                    await self.safe_chat(f"@{target} was not in the VIP list.")
-            else:
-                await self.safe_chat(f"@{user.username} Only Master can manage VIPs! 🚫")
-
-        elif msg_lower == "!viplist":
-            if is_master(user):
-                if self.vip_data:
-                    names = ", ".join(self.vip_data.keys())
-                    await self.safe_chat(f"💎 VIPs ({len(self.vip_data)}): {names}")
-                else:
-                    await self.safe_chat("No VIP members yet! Use !addvip <username>")
-            else:
-                await self.safe_chat(f"@{user.username} Only Master can view VIP list! 🚫")
-
-        elif msg_lower.startswith("!viphistory"):
-            if is_master(user):
-                parts = msg.split(None, 1)
-                if len(parts) == 2:
-                    target = parts[1].strip().lstrip("@")
-                    entry = next(
-                        (v for k, v in self.vip_data.items() if k.lower() == target.lower()),
-                        None,
-                    )
-                    if entry:
-                        lines = [f"📋 VIP history for @{target}:"]
-                        for h in entry.get("history", [])[-5:]:
-                            lines.append(f"  {h['action'].upper()} by {h['by']} at {h['at']}")
-                        await self.safe_chat("\n".join(lines))
-                    else:
-                        await self.safe_chat(f"@{target} has no VIP history.")
-                else:
-                    if self.vip_data:
-                        lines = [f"📋 All VIPs ({len(self.vip_data)}):"]
-                        for name, entry in list(self.vip_data.items())[:8]:
-                            lines.append(f"  {name} — added by {entry.get('added_by','?')} on {entry.get('added_at','?')}")
-                        await self.safe_chat("\n".join(lines))
-                    else:
-                        await self.safe_chat("No VIP history yet.")
-            else:
-                await self.safe_chat(f"@{user.username} Only Master can view VIP history! 🚫")
-
-        elif msg_lower.startswith("@summon "):
-            target_name = msg[8:].strip().lstrip("@")
-            if not target_name:
-                await self.safe_chat(f"@{user.username} Usage: @summon <playerName>")
-            else:
-                try:
-                    resp = await self.highrise.get_room_users()
-                    if hasattr(resp, "content"):
-                        sender_pos = None
-                        target_user = None
-
-                        for room_user, pos in resp.content:
-                            if room_user.username.lower() == user.username.lower():
-                                sender_pos = pos
-                            if room_user.username.lower() == target_name.lower():
-                                target_user = room_user
-
-                        if not target_user:
-                            await self.safe_chat(
-                                f"@{user.username} Could not find '{target_name}' in the room!"
-                            )
-                        elif not sender_pos:
-                            await self.safe_chat(
-                                f"@{user.username} Could not find your location!"
-                            )
-                        else:
-                            await self.safe_teleport(target_user.id, sender_pos)
-                            await self.safe_chat(
-                                f"🌀 @{target_user.username} has been summoned to @{user.username}!"
-                            )
-                    else:
-                        await self.safe_chat(f"@{user.username} Could not fetch room users right now.")
-                except Exception as e:
-                    print(f"[BOT] @summon error: {e}")
-                    await self.safe_chat(f"@{user.username} Something went wrong with the summon!")
 
         elif msg_lower == "!dance":
             dance_emotes = ["emote-dance", "emote-dab", "emote-tpose", "emote-curtsy", "emote-breakdance"]
@@ -447,3 +233,168 @@ class HigrhiseBot(BaseBot):
                 "I'm reading a book about anti-gravity. It's impossible to put down! 😂",
             ]
             await self.safe_chat(random.choice(jokes))
+
+        elif msg_lower.startswith("!emote "):
+            emote_name = msg[7:].strip()
+            if emote_name:
+                await self.safe_emote(f"emote-{emote_name}", user.id)
+            else:
+                await self.safe_chat(f"@{user.username} Usage: !emote wave")
+
+        # ── Summon (everyone) ─────────────────────────────────────────────
+
+        elif msg_lower.startswith("@summon "):
+            target_name = msg[8:].strip().lstrip("@")
+            if not target_name:
+                await self.safe_chat(f"@{user.username} Usage: @summon <playerName>")
+            else:
+                try:
+                    resp = await self.highrise.get_room_users()
+                    if hasattr(resp, "content"):
+                        sender_pos = None
+                        target_user = None
+                        for room_user, pos in resp.content:
+                            if room_user.username.lower() == user.username.lower():
+                                sender_pos = pos
+                            if room_user.username.lower() == target_name.lower():
+                                target_user = room_user
+                        if not target_user:
+                            await self.safe_chat(f"@{user.username} '{target_name}' is not in the room!")
+                        elif not sender_pos:
+                            await self.safe_chat(f"@{user.username} Could not find your location!")
+                        else:
+                            await self.safe_teleport(target_user.id, sender_pos)
+                            await self.safe_chat(
+                                f"🌀 @{target_user.username} has been summoned to @{user.username}!"
+                            )
+                    else:
+                        await self.safe_chat(f"@{user.username} Could not fetch room users right now.")
+                except Exception as e:
+                    print(f"[BOT] @summon error: {e}")
+                    await self.safe_chat(f"@{user.username} Something went wrong with the summon!")
+
+        # ── VIP commands ──────────────────────────────────────────────────
+
+        elif msg_lower == "!vip":
+            if is_vip(user.username, self.vip_data) or is_master(user):
+                await self.safe_teleport(user.id, VIP_FLOOR_POS)
+                await self.safe_chat(f"✨ Welcome to the VIP floor, @{user.username}!")
+            else:
+                await self.safe_chat(
+                    f"@{user.username} You're not a VIP! Ask Master {MASTER_USERNAME} to grant VIP access! 💎"
+                )
+
+        elif msg_lower == "!f0":
+            if is_vip(user.username, self.vip_data) or is_master(user):
+                await self.safe_teleport(user.id, GROUND_FLOOR_POS)
+                await self.safe_chat(f"🚀 Teleporting @{user.username} to the ground floor!")
+            else:
+                await self.safe_chat(f"@{user.username} VIP only command! 🚫")
+
+        # ── Master-only commands ──────────────────────────────────────────
+
+        elif msg_lower == "!pos":
+            if is_master(user):
+                try:
+                    resp = await self.highrise.get_room_users()
+                    if hasattr(resp, "content"):
+                        for room_user, pos in resp.content:
+                            if room_user.username.lower() == MASTER_USERNAME.lower():
+                                await self.safe_chat(
+                                    f"Master, you are at: x={pos.x:.1f}, y={pos.y:.2f}, z={pos.z:.1f} 📍"
+                                )
+                                return
+                    await self.safe_chat("Master, I couldn't pinpoint your location right now!")
+                except Exception as e:
+                    print(f"[BOT] !pos error: {e}")
+            else:
+                await self.safe_chat(f"@{user.username} That command is reserved for Master only! 🚫")
+
+        elif msg_lower == "!tele":
+            if is_master(user):
+                try:
+                    resp = await self.highrise.get_room_users()
+                    if hasattr(resp, "content"):
+                        for room_user, pos in resp.content:
+                            if room_user.username.lower() == MASTER_USERNAME.lower():
+                                await self.safe_walk_to(pos)
+                                await self.safe_chat("Teleporting to your side, Master! 🚀")
+                                return
+                    await self.safe_chat("Master, I couldn't find your location!")
+                except Exception as e:
+                    print(f"[BOT] !tele error: {e}")
+            else:
+                await self.safe_chat(f"@{user.username} That command is reserved for Master only! 🚫")
+
+        elif msg_lower == "!home":
+            if is_master(user):
+                await self.safe_walk_to(DEFAULT_POS)
+                await self.safe_chat("Returning to my post! 🏠")
+            else:
+                await self.safe_chat(f"@{user.username} Only Master can move me! 🚫")
+
+        elif msg_lower.startswith("!addvip "):
+            if is_master(user):
+                target = msg[8:].strip().lstrip("@")
+                if target:
+                    self.vip_data, already = add_vip(target, user.username, self.vip_data)
+                    await save_vips(self.vip_data)
+                    if already:
+                        await self.safe_chat(f"@{target} is already a VIP — history updated!")
+                    else:
+                        await self.safe_chat(f"✨ @{target} has been granted VIP status! (saved permanently)")
+                else:
+                    await self.safe_chat("Usage: !addvip <username>")
+            else:
+                await self.safe_chat(f"@{user.username} Only Master can manage VIPs! 🚫")
+
+        elif msg_lower.startswith("!removevip "):
+            if is_master(user):
+                target = msg[11:].strip().lstrip("@")
+                self.vip_data, found = remove_vip(target, user.username, self.vip_data)
+                await save_vips(self.vip_data)
+                if found:
+                    await self.safe_chat(f"@{target} VIP status removed and saved.")
+                else:
+                    await self.safe_chat(f"@{target} was not in the VIP list.")
+            else:
+                await self.safe_chat(f"@{user.username} Only Master can manage VIPs! 🚫")
+
+        elif msg_lower == "!viplist":
+            if is_master(user):
+                if self.vip_data:
+                    names = ", ".join(self.vip_data.keys())
+                    await self.safe_chat(f"💎 VIPs ({len(self.vip_data)}): {names}")
+                else:
+                    await self.safe_chat("No VIP members yet! Use !addvip <username>")
+            else:
+                await self.safe_chat(f"@{user.username} Only Master can view VIP list! 🚫")
+
+        elif msg_lower.startswith("!viphistory"):
+            if is_master(user):
+                parts = msg.split(None, 1)
+                if len(parts) == 2:
+                    target = parts[1].strip().lstrip("@")
+                    entry = next(
+                        (v for k, v in self.vip_data.items() if k.lower() == target.lower()),
+                        None,
+                    )
+                    if entry:
+                        lines = [f"📋 History for @{target}:"]
+                        for h in entry.get("history", [])[-5:]:
+                            lines.append(f"  {h['action'].upper()} by {h['by']} at {h['at']}")
+                        await self.safe_chat("\n".join(lines))
+                    else:
+                        await self.safe_chat(f"@{target} has no VIP history.")
+                else:
+                    if self.vip_data:
+                        lines = [f"📋 All VIPs ({len(self.vip_data)}):"]
+                        for name, entry in list(self.vip_data.items())[:8]:
+                            lines.append(
+                                f"  {name} — added by {entry.get('added_by','?')} on {entry.get('added_at','?')}"
+                            )
+                        await self.safe_chat("\n".join(lines))
+                    else:
+                        await self.safe_chat("No VIP history yet.")
+            else:
+                await self.safe_chat(f"@{user.username} Only Master can view VIP history! 🚫")
