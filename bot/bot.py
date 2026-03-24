@@ -9,7 +9,8 @@ from highrise.models import Position, SessionMetadata, User
 MASTER_USERNAME = "Zen1thos"
 
 DEFAULT_POS = Position(x=18.0, y=0.0, z=13.5, facing="FrontRight")
-VIP_FLOOR_POS = Position(x=13.0, y=0.10000000149011612, z=5.0, facing="FrontRight")
+VIP_FLOOR_POS = Position(x=4.0, y=12.25, z=4.5, facing="FrontRight")
+GROUND_FLOOR_POS = Position(x=13.0, y=0.10000000149011612, z=5.0, facing="FrontRight")
 
 GREETINGS = [
     "Hey there! Welcome! 👋",
@@ -274,7 +275,7 @@ class HigrhiseBot(BaseBot):
 
         elif msg_lower == "!f0":
             if is_vip(user.username, self.vip_users) or is_master(user):
-                await self.safe_teleport(user.id, VIP_FLOOR_POS)
+                await self.safe_teleport(user.id, GROUND_FLOOR_POS)
                 await self.safe_chat(f"🚀 Teleporting @{user.username} to the ground floor!")
             else:
                 await self.safe_chat(f"@{user.username} VIP only command! 🚫")
