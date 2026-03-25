@@ -197,15 +197,19 @@ class HigrhiseBot(BaseBot):
 
         if ml == "!help":
             await self.safe_chat(
-                "📋 ZenBot Commands:\n"
+                "📋 ZenBot Commands (1/2):\n"
                 "!hi  !joke  !flip  !dance\n"
                 "!8ball <q>  !emote <name>\n"
                 "!song  !playlist  !queue\n"
-                "!play <title> — request a song (VIP)\n"
-                "@summon <name> — teleport to you\n"
-                "!vip — VIP floor  |  !f0 — ground\n"
-                "!<wrap> — any saved teleport spot\n"
-                "[Master]: !setbot !setwrap !wraplist\n"
+                "!play <q> — req song (VIP)\n"
+                "@summon <name> — teleport\n"
+                "!vip — VIP  |  !f0 — ground\n"
+                "!<wrap> — any saved spot"
+            )
+            await asyncio.sleep(0.5)
+            await self.safe_chat(
+                "📋 Commands (2/2) [Master]:\n"
+                "!setbot !setwrap !wraplist\n"
                 "!deletewrap !addvip !removevip\n"
                 "!viplist !viphistory !nextsong\n"
                 "!addsong !removesong !clearqueue"
