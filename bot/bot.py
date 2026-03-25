@@ -4,7 +4,6 @@ import traceback
 from highrise import BaseBot
 from highrise.models import Position, SessionMetadata, User, CurrencyItem, Item
 
-import keep_alive  # for writing bot_status
 from store import (
     load_data, save_data, is_vip, add_vip, remove_vip,
     set_wrap, get_wrap, delete_wrap,
@@ -117,31 +116,13 @@ class HigrhiseBot(BaseBot):
 
     # ─── Lifecycle ────────────────────────────────────────────────────────────
 
-    async def _keepalive_loop(self):
-        """Send periodic pings to keep the Highrise WebSocket connection alive."""
-        while True:
-            try:
-                await asyncio.sleep(KEEPALIVE_INTERVAL)
-                await self.highrise.ping()
-                print("[BOT] Keepalive ping sent.")
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                print(f"[BOT] keepalive error: {e}")
-                await asyncio.sleep(5)
-
     async def before_start(self, tg) -> None:
         """Start background tasks inside the SDK task group so they're
         cancelled cleanly on disconnect — no task leaks on reconnect."""
-        tg.start_soon(self._keepalive_loop)
         tg.start_soon(self._song_loop)
 
     async def on_start(self, session_metadata: SessionMetadata) -> None:
         print(f"[BOT] Connected! Session: {session_metadata.user_id}")
-        keep_alive.bot_status["connected"] = True
-        keep_alive.bot_status["session_id"] = session_metadata.user_id
-        keep_alive.bot_status["last_connected_at"] = now_str()
-
         await asyncio.sleep(8)
         await self.safe_walk_to(DEFAULT_POS, retries=5, delay=5.0)
         await self.safe_chat("🤖 ZenBot is online! Type !help for commands.")

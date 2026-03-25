@@ -1,39 +1,30 @@
-import asyncio
 import os
 import sys
-import traceback
-sys.path.insert(0, os.path.dirname(__file__))
+import time
+import subprocess
+import threading
 
-from highrise.__main__ import main, BotDefinition
-from bot import HigrhiseBot
-from keep_alive import run_keep_alive, bot_status
+sys.path.insert(0, os.path.dirname(__file__))
+from keep_alive import run_keep_alive
 
 RECONNECT_DELAY = 15
 
 
-async def run_bot(token: str, room_id: str):
+def run_bot_loop(token: str, room_id: str):
     attempt = 0
     while True:
         attempt += 1
-        bot_status["reconnect_attempts"] = attempt
-        bot_status["connected"] = False
-        print(f"[MAIN] Starting bot (attempt #{attempt})...")
+        print(f"[MAIN] Starting bot (attempt #{attempt}) for room: {room_id}")
         try:
-            bot = HigrhiseBot()
-            definitions = [
-                BotDefinition(bot=bot, room_id=room_id, api_token=token)
-            ]
-            await main(definitions)
-            print("[MAIN] Bot session ended cleanly.")
-        except KeyboardInterrupt:
-            print("[MAIN] Stopped by user.")
-            break
+            result = subprocess.run(
+                [sys.executable, "-m", "highrise", "bot:HigrhiseBot", room_id, token],
+                cwd=os.path.dirname(__file__),
+            )
+            print(f"[MAIN] Bot exited with code {result.returncode}.")
         except Exception as e:
-            print(f"[MAIN] Bot crashed: {e}")
-            traceback.print_exc()
-        bot_status["connected"] = False
+            print(f"[MAIN] Failed to start bot process: {e}")
         print(f"[MAIN] Reconnecting in {RECONNECT_DELAY}s...")
-        await asyncio.sleep(RECONNECT_DELAY)
+        time.sleep(RECONNECT_DELAY)
 
 
 if __name__ == "__main__":
@@ -45,6 +36,8 @@ if __name__ == "__main__":
     if not room_id:
         raise RuntimeError("HIGHRISE_ROOM_ID is not set!")
 
+    # Start the keep-alive web server in a daemon thread
     run_keep_alive()
-    print(f"[MAIN] ZenBot starting for room: {room_id}")
-    asyncio.run(run_bot(token, room_id))
+
+    # Run the bot loop in the main thread (blocks forever, reconnects on crash)
+    run_bot_loop(token, room_id)
