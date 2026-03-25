@@ -8,7 +8,7 @@ from store import (
     load_data, save_data, is_vip, add_vip, remove_vip,
     set_wrap, get_wrap, delete_wrap,
     current_song, next_song, add_song, remove_song,
-    queue_song, dequeue_song, get_queue,
+    queue_song, dequeue_song, get_queue, search_soundcloud,
     now_str,
 )
 
@@ -200,18 +200,19 @@ class HigrhiseBot(BaseBot):
             await self.safe_chat(
                 "📋 ZenBot Commands (1/2):\n"
                 "!hi  !joke  !flip  !dance\n"
+                "!hug  !slap  !kiss  !rizz\n"
                 "!8ball <q>  !emote <name>\n"
                 "!song  !playlist  !queue\n"
                 "!play <q> — req song (VIP)\n"
                 "@summon <name> — teleport\n"
-                "!vip — VIP  |  !f0 — ground\n"
-                "!<wrap> — any saved spot"
+                "!vip  !f0  !<wrap> (VIP)\n"
             )
             await asyncio.sleep(0.5)
             await self.safe_chat(
                 "📋 Commands (2/2) [Master]:\n"
-                "!setbot !setwrap !wraplist\n"
-                "!deletewrap !addvip !removevip\n"
+                "!setbot !tele !pos !home\n"
+                "!setwrap !wraplist !deletewrap\n"
+                "!addvip !removevip\n"
                 "!viplist !viphistory !nextsong\n"
                 "!addsong !removesong !clearqueue"
             )
@@ -219,14 +220,7 @@ class HigrhiseBot(BaseBot):
         # ── Fun (everyone) ─────────────────────────────────────────────────
 
         elif ml == "!hi":
-            await self.safe_chat(random.choice(RANDOM_HI))
-
-        elif ml == "!dance":
-            await self.safe_emote(random.choice(["emote-dance", "emote-dab", "emote-breakdance", "emote-curtsy"]))
-            await self.safe_chat("🕺 Let's go!")
-
-        elif ml == "!flip":
-            await self.safe_chat(f"@{user.username}: {random.choice(['Heads! 🪙', 'Tails! 🪙'])}")
+            await self.safe_chat(f"@{user.username} {random.choice(GREETINGS)}")
 
         elif ml == "!joke":
             jokes = [
@@ -243,7 +237,37 @@ class HigrhiseBot(BaseBot):
                        "The stars say YES! 🎱", "Ask again later 🎱", "Definitely! 🎱", "Signs point to no 🎱"]
             await self.safe_chat(random.choice(answers))
 
+        elif ml == "!dance":
+            dances = ["emote-tiktok8", "emote-tiktok2", "dance-macarena", "dance-weird"]
+            await self.safe_emote(random.choice(dances), user.id)
+
+        elif ml == "!flip":
+            res = random.choice(["Heads", "Tails"])
+            await self.safe_chat(f"🪙 @{user.username} flipped a coin: {res}!")
+
+        # ── Social interactions ─────────────────────────────────────────────
+        elif ml.startswith("!hug "):
+            target = msg[5:].strip()
+            await self.safe_chat(f"@{user.username} sends a warm, cozy hug to {target}! 🤗💖")
+
+        elif ml.startswith("!slap "):
+            target = msg[6:].strip()
+            await self.safe_chat(f"@{user.username} playfully slaps {target}! *Ouch!* 🖐️💥")
+
+        elif ml.startswith("!kiss "):
+            target = msg[6:].strip()
+            await self.safe_chat(f"@{user.username} blows a sweet kiss to {target}! 💋✨")
+
+        elif ml == "!rizz":
+            rizz_lines = [
+                "Are you a magician? Because whenever I look at you, everyone else disappears. ✨",
+                "Do you have a map? I keep getting lost in your eyes. 🗺️",
+                "Are you a campfire? Because you are hot and I want s'more. 🔥"
+            ]
+            await self.safe_chat(f"@{user.username}: {random.choice(rizz_lines)}")
+
         # ── !emote — anyone can use; master gets no target (bot emotes freely)
+
 
         elif ml.startswith("!emote "):
             emote_name = msg[7:].strip()
@@ -281,25 +305,41 @@ class HigrhiseBot(BaseBot):
             if not (is_vip(user.username, self.data) or is_master(user)):
                 await self.safe_chat(f"@{user.username} 🎵 Song requests are VIP only! Ask Master {MASTER_USERNAME} for VIP 💎")
                 return
-            query = msg[6:].strip().lower()
+            query_str = msg[6:].strip()
+            query_lower = query_str.lower()
             songs = self.data["songs"]
-            # Find best match in playlist
+            
+            # 1. Find best match in local playlist
             match = next(
-                (s for s in songs if query in s["title"].lower() or query in s["artist"].lower()),
+                (s for s in songs if query_lower in s["title"].lower() or query_lower in s["artist"].lower()),
                 None
             )
-            if not match:
-                await self.safe_chat(
-                    f"@{user.username} ❌ Couldn't find '{msg[6:].strip()}' in the playlist.\n"
-                    f"Type !playlist to see available songs."
-                )
-            else:
+            
+            # 2. If found locally, queue it
+            if match:
                 queue_song(match, user.username, self.data)
                 pos = len(get_queue(self.data))
                 await self.safe_chat(
                     f"✅ @{user.username} queued: {match['title']} by {match['artist']} "
                     f"(#{pos} in queue) 🎵"
                 )
+            # 3. If not found locally, search SoundCloud via yt-dlp
+            else:
+                await self.safe_chat(f"🔍 Searching SoundCloud for '{query_str}'...")
+                # Run the synchronous yt-dlp search in a thread to avoid blocking the bot loop
+                sc_match = await asyncio.to_thread(search_soundcloud, query_str)
+                if sc_match:
+                    queue_song(sc_match, user.username, self.data)
+                    pos = len(get_queue(self.data))
+                    await self.safe_chat(
+                        f"✅ @{user.username} queued (via SoundCloud): {sc_match['title']} by {sc_match['artist']} "
+                        f"(#{pos} in queue) 🎵\n🔗 {sc_match['url']}"
+                    )
+                else:
+                    await self.safe_chat(
+                        f"@{user.username} ❌ Couldn't find '{query_str}' in playlist or SoundCloud."
+                    )
+
 
         elif ml == "!nextsong":
             if is_master(user):
@@ -423,12 +463,12 @@ class HigrhiseBot(BaseBot):
             keyword = msg.split(None, 1)[1].strip().lower()
             if not keyword:
                 await self.safe_chat("Usage: !setwrap <keyword>"); return
-            pos = await self._get_user_pos(MASTER_USERNAME)
+            pos = await self._get_user_pos(user.username)
             if not pos:
                 await self.safe_chat("Couldn't find your position!"); return
             set_wrap(keyword, pos.x, pos.y, pos.z, pos.facing, user.username, self.data)
             await save_data(self.data)
-            await self.safe_chat(f"✅ '!{keyword}' saved! Anyone can type !{keyword} to teleport here.")
+            await self.safe_chat(f"✅ '!{keyword}' saved! VIPs can now type !{keyword} to teleport here.")
 
         elif ml in ("!wraplist", "/wraplist"):
             if not is_master(user):
@@ -546,13 +586,15 @@ class HigrhiseBot(BaseBot):
             self.data["song_queue"] = []
             await self.safe_chat(f"✅ Queue cleared! ({count} requests removed)" if count else "Queue was already empty.")
 
-        # ── Dynamic wrap teleport (everyone) ─────────────────────────────────
+        # ── Dynamic wrap teleport (VIP + Master) ───────────────────────────
         # Must be LAST — catches any !keyword that matches a saved wrap
 
         elif ml.startswith("!") and " " not in ml:
             keyword = ml[1:]
             wrap = get_wrap(keyword, self.data)
             if wrap:
+                if not (is_vip(user.username, self.data) or is_master(user)):
+                    await self.safe_chat(f"@{user.username} Wrap teleports are VIP only! 🚫"); return
                 pos = Position(x=wrap["x"], y=wrap["y"], z=wrap["z"], facing=wrap["facing"])
                 await self.safe_teleport(user.id, pos)
                 await self.safe_chat(f"🌀 Teleporting @{user.username} to '{keyword}'!")

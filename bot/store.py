@@ -15,6 +15,7 @@ Data shape:
 import json
 import os
 import aiohttp
+import yt_dlp
 from datetime import datetime
 from pathlib import Path
 
@@ -222,3 +223,25 @@ def dequeue_song(data: dict) -> dict | None:
 def get_queue(data: dict) -> list:
     """Return the current song request queue."""
     return data.setdefault("song_queue", [])
+
+
+def search_soundcloud(query: str) -> dict | None:
+    """Use yt-dlp to perform a live search on SoundCloud (returns top 1 result)."""
+    ydl_opts = {
+        'default_search': 'scsearch1:',
+        'quiet': True,
+        'extract_flat': True,
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(query, download=False)
+            if 'entries' in info and len(info['entries']) > 0:
+                entry = info['entries'][0]
+                return {
+                    "title": entry.get("title", "Unknown Title"),
+                    "artist": entry.get("uploader", "SoundCloud"),
+                    "url": entry.get("url", "")
+                }
+    except Exception as e:
+        print(f"[STORE] yt-dlp search error: {e}")
+    return None
