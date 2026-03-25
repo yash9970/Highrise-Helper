@@ -8,6 +8,7 @@ from store import (
     load_data, save_data, is_vip, add_vip, remove_vip,
     set_wrap, get_wrap, delete_wrap,
     current_song, next_song, add_song, remove_song,
+    queue_song, dequeue_song, get_queue,
     now_str,
 )
 
@@ -97,16 +98,28 @@ class HigrhiseBot(BaseBot):
         return None
 
     async def _song_loop(self):
-        """Announce the current song every 5 minutes."""
+        """Announce songs every 5 minutes. Queued requests play first."""
         await asyncio.sleep(SONG_ANNOUNCE_INTERVAL)
         while True:
             try:
-                song = current_song(self.data)
-                msg = f"🎵 Now Playing: {song['title']} by {song['artist']}"
-                if song.get("url"):
-                    msg += f"\n🔗 {song['url']}"
+                # Drain the request queue first
+                queued = dequeue_song(self.data)
+                if queued:
+                    msg = (f"🎵 Now Playing (requested by @{queued['requested_by']}): "
+                           f"{queued['title']} by {queued['artist']}")
+                    if queued.get("url"):
+                        msg += f"\n🔗 {queued['url']}"
+                    remaining = len(get_queue(self.data))
+                    if remaining:
+                        msg += f"\n📋 {remaining} more in queue"
+                else:
+                    # Fall back to auto-playlist
+                    song = current_song(self.data)
+                    msg = f"🎵 Now Playing: {song['title']} by {song['artist']}"
+                    if song.get("url"):
+                        msg += f"\n🔗 {song['url']}"
+                    next_song(self.data)
                 await self.safe_chat(msg)
-                next_song(self.data)
                 await asyncio.sleep(SONG_ANNOUNCE_INTERVAL)
             except asyncio.CancelledError:
                 break
@@ -116,16 +129,15 @@ class HigrhiseBot(BaseBot):
 
     # ─── Lifecycle ────────────────────────────────────────────────────────────
 
-    async def before_start(self, tg) -> None:
-        """Start background tasks inside the SDK task group so they're
-        cancelled cleanly on disconnect — no task leaks on reconnect."""
-        tg.create_task(self._song_loop())
-
     async def on_start(self, session_metadata: SessionMetadata) -> None:
         print(f"[BOT] Connected! Session: {session_metadata.user_id}")
+        # Launch song loop as a free task — NOT in the SDK's TaskGroup,
+        # so a crash here cannot kill the bot connection.
+        self._song_task = asyncio.create_task(self._song_loop())
         await asyncio.sleep(8)
         await self.safe_walk_to(DEFAULT_POS, retries=5, delay=5.0)
         await self.safe_chat("🤖 ZenBot is online! Type !help for commands.")
+
 
     async def on_user_join(self, user: User, position: Position) -> None:
         try:
@@ -188,14 +200,15 @@ class HigrhiseBot(BaseBot):
                 "📋 ZenBot Commands:\n"
                 "!hi  !joke  !flip  !dance\n"
                 "!8ball <q>  !emote <name>\n"
-                "!song  !nextsong  !playlist\n"
+                "!song  !playlist  !queue\n"
+                "!play <title> — request a song (VIP)\n"
                 "@summon <name> — teleport to you\n"
                 "!vip — VIP floor  |  !f0 — ground\n"
                 "!<wrap> — any saved teleport spot\n"
-                "[Master only]: !setbot !setwrap\n"
-                "!wraplist !deletewrap !addvip\n"
-                "!removevip !viplist !viphistory\n"
-                "!addsong !removesong !nextsong"
+                "[Master]: !setbot !setwrap !wraplist\n"
+                "!deletewrap !addvip !removevip\n"
+                "!viplist !viphistory !nextsong\n"
+                "!addsong !removesong !clearqueue"
             )
 
         # ── Fun (everyone) ─────────────────────────────────────────────────
@@ -247,14 +260,62 @@ class HigrhiseBot(BaseBot):
                 reply += f"\n🔗 {song['url']}"
             await self.safe_chat(reply)
 
+        elif ml == "!queue":
+            queue = get_queue(self.data)
+            if not queue:
+                await self.safe_chat("📋 No songs in queue! Type !play <title> to request one.")
+            else:
+                lines = [f"📋 Song Queue ({len(queue)}):"]
+                for i, s in enumerate(queue[:5], 1):
+                    lines.append(f"  {i}. {s['title']} — {s['artist']} (by @{s['requested_by']})")
+                if len(queue) > 5:
+                    lines.append(f"  ... and {len(queue)-5} more")
+                await self.safe_chat("\n".join(lines))
+
+        elif ml.startswith("!play "):
+            if not (is_vip(user.username, self.data) or is_master(user)):
+                await self.safe_chat(f"@{user.username} 🎵 Song requests are VIP only! Ask Master {MASTER_USERNAME} for VIP 💎")
+                return
+            query = msg[6:].strip().lower()
+            songs = self.data["songs"]
+            # Find best match in playlist
+            match = next(
+                (s for s in songs if query in s["title"].lower() or query in s["artist"].lower()),
+                None
+            )
+            if not match:
+                await self.safe_chat(
+                    f"@{user.username} ❌ Couldn't find '{msg[6:].strip()}' in the playlist.\n"
+                    f"Type !playlist to see available songs."
+                )
+            else:
+                queue_song(match, user.username, self.data)
+                pos = len(get_queue(self.data))
+                await self.safe_chat(
+                    f"✅ @{user.username} queued: {match['title']} by {match['artist']} "
+                    f"(#{pos} in queue) 🎵"
+                )
+
         elif ml == "!nextsong":
             if is_master(user):
-                song = next_song(self.data)
-                await save_data(self.data)
-                reply = f"⏭️ Next: {song['title']} by {song['artist']}"
-                if song.get("url"):
-                    reply += f"\n🔗 {song['url']}"
-                await self.safe_chat(reply)
+                # If there's a queue, pop from it; otherwise advance playlist
+                queued = dequeue_song(self.data)
+                if queued:
+                    msg_text = (f"⏭️ Now Playing (requested by @{queued['requested_by']}): "
+                                f"{queued['title']} by {queued['artist']}")
+                    if queued.get("url"):
+                        msg_text += f"\n🔗 {queued['url']}"
+                    remaining = len(get_queue(self.data))
+                    if remaining:
+                        msg_text += f"\n📋 {remaining} more in queue"
+                    await self.safe_chat(msg_text)
+                else:
+                    song = next_song(self.data)
+                    await save_data(self.data)
+                    reply = f"⏭️ Next: {song['title']} by {song['artist']}"
+                    if song.get("url"):
+                        reply += f"\n🔗 {song['url']}"
+                    await self.safe_chat(reply)
             else:
                 await self.safe_chat(f"@{user.username} Only Master can skip songs! 🚫")
 
@@ -473,7 +534,14 @@ class HigrhiseBot(BaseBot):
             except ValueError:
                 await self.safe_chat("Usage: !removesong <number>  (see !playlist for numbers)")
 
-        # ── Dynamic wrap teleport (everyone) ───────────────────────────────
+        elif ml == "!clearqueue":
+            if not is_master(user):
+                await self.safe_chat(f"@{user.username} Master only! 🚫"); return
+            count = len(get_queue(self.data))
+            self.data["song_queue"] = []
+            await self.safe_chat(f"✅ Queue cleared! ({count} requests removed)" if count else "Queue was already empty.")
+
+        # ── Dynamic wrap teleport (everyone) ─────────────────────────────────
         # Must be LAST — catches any !keyword that matches a saved wrap
 
         elif ml.startswith("!") and " " not in ml:

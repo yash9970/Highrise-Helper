@@ -45,6 +45,7 @@ def _empty_data() -> dict:
         "wraps": {},
         "songs": DEFAULT_SONGS[:],
         "song_index": 0,
+        "song_queue": [],
     }
 
 
@@ -199,3 +200,25 @@ def remove_song(index: int, data: dict) -> bool:
         data["song_index"] = data["song_index"] % max(len(data["songs"]), 1)
         return True
     return False
+
+
+# ── Song Queue helpers ────────────────────────────────────────────────────────
+
+def queue_song(song: dict, requested_by: str, data: dict):
+    """Add a song to the request queue."""
+    entry = {"title": song["title"], "artist": song["artist"],
+             "url": song.get("url", ""), "requested_by": requested_by}
+    data.setdefault("song_queue", []).append(entry)
+
+
+def dequeue_song(data: dict) -> dict | None:
+    """Pop and return the next queued song, or None if empty."""
+    queue = data.setdefault("song_queue", [])
+    if queue:
+        return queue.pop(0)
+    return None
+
+
+def get_queue(data: dict) -> list:
+    """Return the current song request queue."""
+    return data.setdefault("song_queue", [])
