@@ -424,11 +424,12 @@ class HigrhiseBot(BaseBot):
             if not is_master(user):
                 await self.safe_chat(f"@{user.username} Master only! 🚫"); return
             pos = await self._get_user_pos(MASTER_USERNAME)
-            if pos:
-                await self.safe_walk_to(pos)
-                await self.safe_chat("✅ Moved to your position, Master!")
-            else:
-                await self.safe_chat("Couldn't find your position!")
+            if not pos:
+                await self.safe_chat("Couldn't find your position!"); return
+            if not isinstance(pos, Position):
+                await self.safe_chat("Please stand up first!"); return
+            await self.safe_walk_to(pos)
+            await self.safe_chat("✅ Moved to your position, Master!")
 
         elif ml == "!home":
             if not is_master(user):
@@ -440,20 +441,22 @@ class HigrhiseBot(BaseBot):
             if not is_master(user):
                 await self.safe_chat(f"@{user.username} Master only! 🚫"); return
             pos = await self._get_user_pos(MASTER_USERNAME)
-            if pos:
-                await self.safe_walk_to(pos)
-                await self.safe_chat("Coming to you, Master! 🚀")
-            else:
-                await self.safe_chat("Couldn't find your location!")
+            if not pos:
+                await self.safe_chat("Couldn't find your location!"); return
+            if not isinstance(pos, Position):
+                await self.safe_chat("Please stand up first!"); return
+            await self.safe_walk_to(pos)
+            await self.safe_chat("Coming to you, Master! 🚀")
 
         elif ml == "!pos":
             if not is_master(user):
                 await self.safe_chat(f"@{user.username} Master only! 🚫"); return
             pos = await self._get_user_pos(MASTER_USERNAME)
-            if pos:
-                await self.safe_chat(f"📍 x={pos.x:.1f}, y={pos.y:.2f}, z={pos.z:.1f}")
-            else:
-                await self.safe_chat("Couldn't find your location!")
+            if not pos:
+                await self.safe_chat("Couldn't find your location!"); return
+            if not isinstance(pos, Position):
+                await self.safe_chat("You are sitting on an anchor!"); return
+            await self.safe_chat(f"📍 x={pos.x:.1f}, y={pos.y:.2f}, z={pos.z:.1f}")
 
         # ── Master: setwrap ────────────────────────────────────────────────
 
@@ -466,6 +469,8 @@ class HigrhiseBot(BaseBot):
             pos = await self._get_user_pos(user.username)
             if not pos:
                 await self.safe_chat("Couldn't find your position!"); return
+            if not isinstance(pos, Position):
+                await self.safe_chat("Please stand up first to set a wrap!"); return
             set_wrap(keyword, pos.x, pos.y, pos.z, pos.facing, user.username, self.data)
             await save_data(self.data)
             await self.safe_chat(f"✅ '!{keyword}' saved! VIPs can now type !{keyword} to teleport here.")
