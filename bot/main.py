@@ -6,24 +6,22 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from highrise.__main__ import main, BotDefinition
 from bot import HigrhiseBot
-from keep_alive import run_keep_alive
+from keep_alive import run_keep_alive, bot_status
 
-RECONNECT_DELAY = 15  # seconds between reconnect attempts
+RECONNECT_DELAY = 15
 
 
 async def run_bot(token: str, room_id: str):
     attempt = 0
     while True:
         attempt += 1
+        bot_status["reconnect_attempts"] = attempt
+        bot_status["connected"] = False
         print(f"[MAIN] Starting bot (attempt #{attempt})...")
         try:
             bot = HigrhiseBot()
             definitions = [
-                BotDefinition(
-                    bot=bot,
-                    room_id=room_id,
-                    api_token=token,
-                )
+                BotDefinition(bot=bot, room_id=room_id, api_token=token)
             ]
             await main(definitions)
             print("[MAIN] Bot session ended cleanly.")
@@ -33,7 +31,8 @@ async def run_bot(token: str, room_id: str):
         except Exception as e:
             print(f"[MAIN] Bot crashed: {e}")
             traceback.print_exc()
-        print(f"[MAIN] Reconnecting in {RECONNECT_DELAY}s... (attempt #{attempt + 1} will follow)")
+        bot_status["connected"] = False
+        print(f"[MAIN] Reconnecting in {RECONNECT_DELAY}s...")
         await asyncio.sleep(RECONNECT_DELAY)
 
 
