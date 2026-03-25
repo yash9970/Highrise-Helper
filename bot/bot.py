@@ -119,7 +119,7 @@ class HigrhiseBot(BaseBot):
     async def before_start(self, tg) -> None:
         """Start background tasks inside the SDK task group so they're
         cancelled cleanly on disconnect — no task leaks on reconnect."""
-        tg.start_soon(self._song_loop)
+        tg.create_task(self._song_loop())
 
     async def on_start(self, session_metadata: SessionMetadata) -> None:
         print(f"[BOT] Connected! Session: {session_metadata.user_id}")
