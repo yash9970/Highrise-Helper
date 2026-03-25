@@ -97,20 +97,6 @@ class HigrhiseBot(BaseBot):
             print(f"[BOT] get_user_pos error: {e}")
         return None
 
-    # ─── Background loops (started via before_start task group) ──────────────
-
-    async def _keepalive_loop(self):
-        """Ping Highrise every 25s so the WebSocket never times out."""
-        while True:
-            await asyncio.sleep(KEEPALIVE_INTERVAL)
-            try:
-                await self.highrise.get_room_users()
-                print("[BOT] Keepalive OK")
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                print(f"[BOT] Keepalive error: {e}")
-
     async def _song_loop(self):
         """Announce the current song every 5 minutes."""
         await asyncio.sleep(SONG_ANNOUNCE_INTERVAL)
