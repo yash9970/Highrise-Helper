@@ -19,6 +19,7 @@ def run_bot_loop(token: str, room_id: str):
             result = subprocess.run(
                 [sys.executable, "-m", "highrise", "bot:HigrhiseBot", room_id, token],
                 cwd=os.path.dirname(__file__),
+                env={"PYTHONUNBUFFERED": "1", **os.environ},
             )
             print(f"[MAIN] Bot exited with code {result.returncode}.")
         except Exception as e:
