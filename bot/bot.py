@@ -70,10 +70,11 @@ class HigrhiseBot(BaseBot):
         except Exception as e:
             print(f"[BOT] emote error: {e}")
 
-    async def safe_walk_to(self, pos: Position, retries: int = 5, delay: float = 5.0):
+    async def safe_walk_to(self, pos: Position, retries: int = 15, delay: float = 8.0):
         for attempt in range(retries):
             try:
                 await self.highrise.walk_to(pos)
+                print(f"[BOT] Successfully walked to target position.")
                 return
             except Exception as e:
                 print(f"[BOT] walk_to attempt {attempt+1}/{retries}: {e}")
@@ -135,7 +136,7 @@ class HigrhiseBot(BaseBot):
         # so a crash here cannot kill the bot connection.
         self._song_task = asyncio.create_task(self._song_loop())
         await asyncio.sleep(8)
-        await self.safe_walk_to(DEFAULT_POS, retries=5, delay=5.0)
+        await self.safe_walk_to(DEFAULT_POS, retries=15, delay=8.0)
         await self.safe_chat("🤖 ZenBot is online! Type !help for commands.")
 
 
