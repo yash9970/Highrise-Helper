@@ -1,5 +1,5 @@
 services:
-  - type: web
+  - type: worker
     name: zenbot-highrise
     runtime: python
     pythonVersion: "3.11.9"
@@ -10,4 +10,3 @@ services:
         sync: false
       - key: HIGHRISE_ROOM_ID
         sync: false
-    healthCheckPath: /ping
