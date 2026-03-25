@@ -117,6 +117,19 @@ class HigrhiseBot(BaseBot):
 
     # ─── Lifecycle ────────────────────────────────────────────────────────────
 
+    async def _keepalive_loop(self):
+        """Send periodic pings to keep the Highrise WebSocket connection alive."""
+        while True:
+            try:
+                await asyncio.sleep(KEEPALIVE_INTERVAL)
+                await self.highrise.ping()
+                print("[BOT] Keepalive ping sent.")
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"[BOT] keepalive error: {e}")
+                await asyncio.sleep(5)
+
     async def before_start(self, tg) -> None:
         """Start background tasks inside the SDK task group so they're
         cancelled cleanly on disconnect — no task leaks on reconnect."""
