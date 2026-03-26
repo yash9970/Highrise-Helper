@@ -238,8 +238,9 @@ class HigrhiseBot(BaseBot):
             await self.safe_chat(random.choice(answers))
 
         elif ml == "!dance":
-            dances = ["emote-tiktok8", "emote-tiktok2", "dance-macarena", "dance-weird"]
-            await self.safe_emote(random.choice(dances), user.id)
+            # Only use free/universal emotes — no target_id to avoid ownership errors
+            dances = ["emote-dance", "emote-wave", "emote-clap", "emote-shy", "emote-yes"]
+            await self.safe_emote(random.choice(dances))
 
         elif ml == "!flip":
             res = random.choice(["Heads", "Tails"])
