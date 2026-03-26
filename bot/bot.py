@@ -77,7 +77,12 @@ class HigrhiseBot(BaseBot):
                 print(f"[BOT] Successfully walked to target position.")
                 return
             except Exception as e:
+                err = str(e).lower()
                 print(f"[BOT] walk_to attempt {attempt+1}/{retries}: {e}")
+                # Transport is permanently closed — no point retrying
+                if "closing transport" in err or "closed" in err:
+                    print("[BOT] walk_to aborted: transport is gone (session replaced).")
+                    return
                 if attempt < retries - 1:
                     await asyncio.sleep(delay)
 
@@ -144,7 +149,7 @@ class HigrhiseBot(BaseBot):
         try:
             await asyncio.sleep(0.5)
             if is_master(user):
-                await self.safe_emote("emote-bow", user.id)
+                await self.safe_emote("emote-bow")  # bot bows — no target = bot performs
                 await asyncio.sleep(0.5)
                 await self.safe_chat(f"Welcome back, Master {user.username}! 🫡 Your humble servant awaits!")
             else:
