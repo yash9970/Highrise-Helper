@@ -121,10 +121,25 @@ class HigrhiseBot(BaseBot):
             print(f"[BOT] get_outfit error: {e}")
         return []
 
+    async def _keepalive_loop(self):
+        """Walk to home every 20 min to keep the Highrise WebSocket alive."""
+        await asyncio.sleep(60)  # Let startup settle first
+        while True:
+            try:
+                await asyncio.sleep(20 * 60)  # 20 minutes
+                print("[BOT] Keepalive: re-syncing position.")
+                await self.safe_walk_to(DEFAULT_POS, retries=3, delay=5.0)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                print(f"[BOT] keepalive error: {e}")
+
     # ─── Lifecycle ────────────────────────────────────────────────────────────
 
     async def on_start(self, session_metadata: SessionMetadata) -> None:
         print(f"[BOT] Connected! Session: {session_metadata.user_id}")
+        # Keepalive loop — runs as a free task so a crash can't kill the connection
+        asyncio.create_task(self._keepalive_loop())
         await asyncio.sleep(8)
         await self.safe_walk_to(DEFAULT_POS, retries=15, delay=8.0)
         await self.safe_chat("🤖 ZenBot is online! Type !help for commands.")
@@ -429,12 +444,17 @@ class HigrhiseBot(BaseBot):
             if not outfit:
                 await self.safe_chat("👗 Bot outfit is empty or couldn't be fetched.")
             else:
-                lines = [f"👗 Bot Outfit ({len(outfit)} items):"]
-                for item in outfit[:12]:
-                    lines.append(f"  • {item.id}")
-                if len(outfit) > 12:
-                    lines.append(f"  ... and {len(outfit)-12} more")
-                await self.safe_chat("\n".join(lines))
+                await self.safe_chat(f"👗 Bot Outfit ({len(outfit)} items):")
+                # Send in batches of 5 to stay under Highrise's message length limit
+                batch = []
+                for i, item in enumerate(outfit):
+                    batch.append(f"{i+1}. {item.id}")
+                    if len(batch) == 5:
+                        await self.safe_chat("\n".join(batch))
+                        batch = []
+                        await asyncio.sleep(0.4)
+                if batch:
+                    await self.safe_chat("\n".join(batch))
 
         elif ml == "!emotes":
             if not is_master(user):
