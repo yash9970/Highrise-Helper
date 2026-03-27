@@ -122,13 +122,13 @@ class HigrhiseBot(BaseBot):
         return []
 
     async def _keepalive_loop(self):
-        """Walk to home every 20 min to keep the Highrise WebSocket alive."""
+        """Ping Highrise every 5 min to keep the WebSocket alive."""
         await asyncio.sleep(60)  # Let startup settle first
         while True:
             try:
-                await asyncio.sleep(20 * 60)  # 20 minutes
-                print("[BOT] Keepalive: re-syncing position.")
-                await self.safe_walk_to(DEFAULT_POS, retries=3, delay=5.0)
+                await asyncio.sleep(5 * 60)  # 5 minutes
+                await self.highrise.get_room_users()
+                print("[BOT] Keepalive ping ✓")
             except asyncio.CancelledError:
                 break
             except Exception as e:
