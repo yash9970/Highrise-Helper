@@ -39,6 +39,20 @@ def status():
     return jsonify(bot_status)
 
 
+@app.route("/vips")
+def get_vips():
+    from store import load_data
+    data = load_data()
+    return jsonify(list(data.get("vips", {}).keys()))
+
+
+@app.route("/mods")
+def get_mods():
+    from store import load_data
+    data = load_data()
+    return jsonify(list(data.get("mods", {}).keys()))
+
+
 def run_keep_alive():
     port = int(os.environ.get("PORT", 8000))
     t = threading.Thread(
