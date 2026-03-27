@@ -16,7 +16,7 @@ MASTER_USERNAME = "Zen1thos"
 TIP_VIP_THRESHOLD = 500
 KEEPALIVE_INTERVAL = 25        # seconds between Highrise pings
 
-DEFAULT_POS  = Position(x=18.0, y=0.0,  z=13.5, facing="FrontRight")
+DEFAULT_POS  = Position(x=13.0, y=0.10,  z=5.0,  facing="FrontRight")
 VIP_FLOOR    = Position(x=4.0,  y=12.25, z=4.5,  facing="FrontRight")
 GROUND_FLOOR = Position(x=13.0, y=0.10,  z=5.0,  facing="FrontRight")
 FREEZE_POS   = Position(x=0.5,  y=0.0,   z=0.5,  facing="FrontRight")
@@ -59,6 +59,7 @@ def is_master(user: User) -> bool:
 
 class HigrhiseBot(BaseBot):
     def __init__(self):
+        super().__init__()
         self.data = load_data()
         print(f"[BOT] Loaded: {len(self.data['vips'])} VIPs, "
               f"{len(self.data['wraps'])} wraps, {len(self.data['mods'])} mods.")
