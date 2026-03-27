@@ -23,9 +23,9 @@ FREEZE_POS   = Position(x=0.5,  y=0.0,   z=0.5,  facing="FrontRight")
 
 # Known free emotes (bot can perform these without owning them)
 FREE_EMOTES = [
-    "wave", "clap", "shy", "yes", "no", "bow", "sit", "sleep",
-    "flex", "laugh", "cry", "angry", "shrug", "think", "point",
-    "thumbsup", "heart", "dance",
+    "emote-hello", "emote-laughing", "emote-shy", "emote-yes", "emote-no", "emote-lust",
+    "emote-sad", "emote-bow", "emote-kiss", "emote-wave", "dance-macarena", "dance-weird",
+    "dance-shoppingcart", "dance-tiktok8"
 ]
 
 GREETINGS = [
@@ -243,10 +243,11 @@ class HigrhiseBot(BaseBot):
                        "The stars say YES! 🎱", "Ask again later 🎱", "Definitely! 🎱", "Signs point to no 🎱"]
             await self.safe_chat(random.choice(answers))
 
-        elif ml == "!dance":
-            # Only use free/universal emotes — no target_id to avoid ownership errors
-            dances = ["emote-dance", "emote-wave", "emote-clap", "emote-shy", "emote-yes"]
-            await self.safe_emote(random.choice(dances))
+        elif ml.startswith("!dance ") or ml == "!dance":
+            dances = ["dance-macarena", "dance-weird", "dance-shoppingcart", "dance-tiktok8"]
+            dance_choice = random.choice(dances)
+            await self.safe_emote(dance_choice, user.id)
+            await self.safe_emote(dance_choice)
 
         elif ml == "!flip":
             res = random.choice(["Heads", "Tails"])
@@ -254,17 +255,27 @@ class HigrhiseBot(BaseBot):
 
         # ── Social interactions ───────────────────────────────────────────────
 
-        elif ml.startswith("!hug "):
+        elif ml.startswith("!hug ") or ml == "!hug":
+            target = msg[4:].strip()
+            if target:
+                await self.safe_chat(f"@{user.username} sends a warm, cozy hug to {target}! 🤗💖")
+            else:
+                await self.safe_chat(f"@{user.username} gives everyone a big warm hug! 🤗💖")
+
+        elif ml.startswith("!slap ") or ml == "!slap":
             target = msg[5:].strip()
-            await self.safe_chat(f"@{user.username} sends a warm, cozy hug to {target}! 🤗💖")
+            if target:
+                await self.safe_chat(f"@{user.username} playfully slaps {target}! *Ouch!* 🖐️💥")
+            else:
+                await self.safe_chat(f"@{user.username} is slapping the air playfully! 🖐️💥")
 
-        elif ml.startswith("!slap "):
-            target = msg[6:].strip()
-            await self.safe_chat(f"@{user.username} playfully slaps {target}! *Ouch!* 🖐️💥")
-
-        elif ml.startswith("!kiss "):
-            target = msg[6:].strip()
-            await self.safe_chat(f"@{user.username} blows a sweet kiss to {target}! 💋✨")
+        elif ml.startswith("!kiss ") or ml == "!kiss":
+            target = msg[5:].strip()
+            if target:
+                await self.safe_chat(f"@{user.username} blows a sweet kiss to {target}! 💋✨")
+            else:
+                await self.safe_chat(f"@{user.username} blows a sweet kiss to the room! 💋✨")
+            await self.safe_emote("emote-kiss", user.id)
 
         elif ml == "!rizz":
             rizz_lines = [
@@ -276,14 +287,19 @@ class HigrhiseBot(BaseBot):
 
         # ── !emote — anyone can use; master gets no target (bot emotes freely)
 
-        elif ml.startswith("!emote "):
-            emote_name = msg[7:].strip()
+        elif ml.startswith("!emote ") or ml == "!emote":
+            emote_name = msg[6:].strip()
             if emote_name:
+                if not emote_name.startswith("emote-") and not emote_name.startswith("dance-"):
+                    emote_id = f"emote-{emote_name}"
+                else:
+                    emote_id = emote_name
+                
                 if is_master(user):
-                    await self.safe_emote(f"emote-{emote_name}")
+                    await self.safe_emote(emote_id)
                     await self.safe_chat(f"✨ *does {emote_name}*")
                 else:
-                    await self.safe_emote(f"emote-{emote_name}", user.id)
+                    await self.safe_emote(emote_id, user.id)
 
         # ── @summon (everyone) ────────────────────────────────────────────────
 
