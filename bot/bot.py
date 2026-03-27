@@ -5,21 +5,28 @@ from highrise import BaseBot
 from highrise.models import Position, SessionMetadata, User, CurrencyItem, Item
 
 from store import (
-    load_data, save_data, is_vip, add_vip, remove_vip,
+    load_data, save_data,
+    is_vip, add_vip, remove_vip,
+    is_mod, add_mod, remove_mod,
     set_wrap, get_wrap, delete_wrap,
-    current_song, next_song, add_song, remove_song,
-    queue_song, dequeue_song, get_queue, search_soundcloud,
     now_str,
 )
 
 MASTER_USERNAME = "Zen1thos"
 TIP_VIP_THRESHOLD = 500
-SONG_ANNOUNCE_INTERVAL = 300   # 5 minutes between auto song announcements
 KEEPALIVE_INTERVAL = 25        # seconds between Highrise pings
 
 DEFAULT_POS  = Position(x=18.0, y=0.0,  z=13.5, facing="FrontRight")
 VIP_FLOOR    = Position(x=4.0,  y=12.25, z=4.5,  facing="FrontRight")
 GROUND_FLOOR = Position(x=13.0, y=0.10,  z=5.0,  facing="FrontRight")
+FREEZE_POS   = Position(x=0.5,  y=0.0,   z=0.5,  facing="FrontRight")
+
+# Known free emotes (bot can perform these without owning them)
+FREE_EMOTES = [
+    "wave", "clap", "shy", "yes", "no", "bow", "sit", "sleep",
+    "flex", "laugh", "cry", "angry", "shrug", "think", "point",
+    "thumbsup", "heart", "dance",
+]
 
 GREETINGS = [
     "Hey there! Welcome! 👋",
@@ -54,9 +61,9 @@ class HigrhiseBot(BaseBot):
     def __init__(self):
         self.data = load_data()
         print(f"[BOT] Loaded: {len(self.data['vips'])} VIPs, "
-              f"{len(self.data['wraps'])} wraps, {len(self.data['songs'])} songs.")
+              f"{len(self.data['wraps'])} wraps, {len(self.data['mods'])} mods.")
 
-    # ─── Safe helpers ────────────────────────────────────────────────────────
+    # ─── Safe helpers ─────────────────────────────────────────────────────────
 
     async def safe_chat(self, msg: str):
         try:
@@ -103,47 +110,24 @@ class HigrhiseBot(BaseBot):
             print(f"[BOT] get_user_pos error: {e}")
         return None
 
-    async def _song_loop(self):
-        """Announce songs every 5 minutes. Queued requests play first."""
-        await asyncio.sleep(SONG_ANNOUNCE_INTERVAL)
-        while True:
-            try:
-                # Drain the request queue first
-                queued = dequeue_song(self.data)
-                if queued:
-                    msg = (f"🎵 Now Playing (requested by @{queued['requested_by']}): "
-                           f"{queued['title']} by {queued['artist']}")
-                    if queued.get("url"):
-                        msg += f"\n🔗 {queued['url']}"
-                    remaining = len(get_queue(self.data))
-                    if remaining:
-                        msg += f"\n📋 {remaining} more in queue"
-                else:
-                    # Fall back to auto-playlist
-                    song = current_song(self.data)
-                    msg = f"🎵 Now Playing: {song['title']} by {song['artist']}"
-                    if song.get("url"):
-                        msg += f"\n🔗 {song['url']}"
-                    next_song(self.data)
-                await self.safe_chat(msg)
-                await asyncio.sleep(SONG_ANNOUNCE_INTERVAL)
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                print(f"[BOT] song loop error: {e}")
-                await asyncio.sleep(30)
+    async def _get_outfit(self) -> list:
+        """Return the bot's current outfit as a list of Items."""
+        try:
+            resp = await self.highrise.get_my_outfit()
+            # SDK returns GetMyOutfitResponse; outfit is resp.outfit
+            if hasattr(resp, "outfit"):
+                return list(resp.outfit)
+        except Exception as e:
+            print(f"[BOT] get_outfit error: {e}")
+        return []
 
     # ─── Lifecycle ────────────────────────────────────────────────────────────
 
     async def on_start(self, session_metadata: SessionMetadata) -> None:
         print(f"[BOT] Connected! Session: {session_metadata.user_id}")
-        # Launch song loop as a free task — NOT in the SDK's TaskGroup,
-        # so a crash here cannot kill the bot connection.
-        self._song_task = asyncio.create_task(self._song_loop())
         await asyncio.sleep(8)
         await self.safe_walk_to(DEFAULT_POS, retries=15, delay=8.0)
         await self.safe_chat("🤖 ZenBot is online! Type !help for commands.")
-
 
     async def on_user_join(self, user: User, position: Position) -> None:
         try:
@@ -194,12 +178,12 @@ class HigrhiseBot(BaseBot):
             print(f"[BOT] on_chat error '{message}': {e}")
             traceback.print_exc()
 
-    # ─── Commands ────────────────────────────────────────────────────────────
+    # ─── Commands ─────────────────────────────────────────────────────────────
 
     async def _handle_command(self, user: User, msg: str):
         ml = msg.lower()
 
-        # ── Help ───────────────────────────────────────────────────────────
+        # ── Help ──────────────────────────────────────────────────────────────
 
         if ml == "!help":
             await self.safe_chat(
@@ -207,22 +191,23 @@ class HigrhiseBot(BaseBot):
                 "!hi  !joke  !flip  !dance\n"
                 "!hug  !slap  !kiss  !rizz\n"
                 "!8ball <q>  !emote <name>\n"
-                "!song  !playlist  !queue\n"
-                "!play <q> — req song (VIP)\n"
-                "@summon <name> — teleport\n"
                 "!vip  !f0  !<wrap> (VIP)\n"
+                "@summon <name> — teleport\n"
+                "!roomusers  !find <name> (Mod)\n"
+                "!kick <name>  !freeze <name> (Mod)"
             )
             await asyncio.sleep(0.5)
             await self.safe_chat(
                 "📋 Commands (2/2) [Master]:\n"
-                "!setbot !tele !pos !home\n"
-                "!setwrap !wraplist !deletewrap\n"
-                "!addvip !removevip\n"
-                "!viplist !viphistory !nextsong\n"
-                "!addsong !removesong !clearqueue"
+                "!setbot  !tele  !pos  !home\n"
+                "!setwrap  !wraplist  !deletewrap\n"
+                "!addvip  !removevip  !viplist  !viphistory\n"
+                "!addmod  !removemod  !modlist\n"
+                "!inventory  !emotes\n"
+                "!wear <id>  !unwear <id>  !botinfo"
             )
 
-        # ── Fun (everyone) ─────────────────────────────────────────────────
+        # ── Fun (everyone) ────────────────────────────────────────────────────
 
         elif ml == "!hi":
             await self.safe_chat(f"@{user.username} {random.choice(GREETINGS)}")
@@ -251,7 +236,8 @@ class HigrhiseBot(BaseBot):
             res = random.choice(["Heads", "Tails"])
             await self.safe_chat(f"🪙 @{user.username} flipped a coin: {res}!")
 
-        # ── Social interactions ─────────────────────────────────────────────
+        # ── Social interactions ───────────────────────────────────────────────
+
         elif ml.startswith("!hug "):
             target = msg[5:].strip()
             await self.safe_chat(f"@{user.username} sends a warm, cozy hug to {target}! 🤗💖")
@@ -274,115 +260,16 @@ class HigrhiseBot(BaseBot):
 
         # ── !emote — anyone can use; master gets no target (bot emotes freely)
 
-
         elif ml.startswith("!emote "):
             emote_name = msg[7:].strip()
             if emote_name:
                 if is_master(user):
-                    # Bot performs emote freely (no target)
                     await self.safe_emote(f"emote-{emote_name}")
                     await self.safe_chat(f"✨ *does {emote_name}*")
                 else:
-                    # Bot emotes toward the requester
                     await self.safe_emote(f"emote-{emote_name}", user.id)
 
-        # ── Music (everyone) ───────────────────────────────────────────────
-
-        elif ml == "!song":
-            song = current_song(self.data)
-            reply = f"🎵 Now Playing: {song['title']} by {song['artist']}"
-            if song.get("url"):
-                reply += f"\n🔗 {song['url']}"
-            await self.safe_chat(reply)
-
-        elif ml == "!queue":
-            queue = get_queue(self.data)
-            if not queue:
-                await self.safe_chat("📋 No songs in queue! Type !play <title> to request one.")
-            else:
-                lines = [f"📋 Song Queue ({len(queue)}):"]
-                for i, s in enumerate(queue[:5], 1):
-                    lines.append(f"  {i}. {s['title']} — {s['artist']} (by @{s['requested_by']})")
-                if len(queue) > 5:
-                    lines.append(f"  ... and {len(queue)-5} more")
-                await self.safe_chat("\n".join(lines))
-
-        elif ml.startswith("!play "):
-            if not (is_vip(user.username, self.data) or is_master(user)):
-                await self.safe_chat(f"@{user.username} 🎵 Song requests are VIP only! Ask Master {MASTER_USERNAME} for VIP 💎")
-                return
-            query_str = msg[6:].strip()
-            query_lower = query_str.lower()
-            songs = self.data["songs"]
-            
-            # 1. Find best match in local playlist
-            match = next(
-                (s for s in songs if query_lower in s["title"].lower() or query_lower in s["artist"].lower()),
-                None
-            )
-            
-            # 2. If found locally, queue it
-            if match:
-                queue_song(match, user.username, self.data)
-                pos = len(get_queue(self.data))
-                await self.safe_chat(
-                    f"✅ @{user.username} queued: {match['title']} by {match['artist']} "
-                    f"(#{pos} in queue) 🎵"
-                )
-            # 3. If not found locally, search SoundCloud via yt-dlp
-            else:
-                await self.safe_chat(f"🔍 Searching SoundCloud for '{query_str}'...")
-                # Run the synchronous yt-dlp search in a thread to avoid blocking the bot loop
-                sc_match = await asyncio.to_thread(search_soundcloud, query_str)
-                if sc_match:
-                    queue_song(sc_match, user.username, self.data)
-                    pos = len(get_queue(self.data))
-                    await self.safe_chat(
-                        f"✅ @{user.username} queued (via SoundCloud): {sc_match['title']} by {sc_match['artist']} "
-                        f"(#{pos} in queue) 🎵\n🔗 {sc_match['url']}"
-                    )
-                else:
-                    await self.safe_chat(
-                        f"@{user.username} ❌ Couldn't find '{query_str}' in playlist or SoundCloud."
-                    )
-
-
-        elif ml == "!nextsong":
-            if is_master(user):
-                # If there's a queue, pop from it; otherwise advance playlist
-                queued = dequeue_song(self.data)
-                if queued:
-                    msg_text = (f"⏭️ Now Playing (requested by @{queued['requested_by']}): "
-                                f"{queued['title']} by {queued['artist']}")
-                    if queued.get("url"):
-                        msg_text += f"\n🔗 {queued['url']}"
-                    remaining = len(get_queue(self.data))
-                    if remaining:
-                        msg_text += f"\n📋 {remaining} more in queue"
-                    await self.safe_chat(msg_text)
-                else:
-                    song = next_song(self.data)
-                    await save_data(self.data)
-                    reply = f"⏭️ Next: {song['title']} by {song['artist']}"
-                    if song.get("url"):
-                        reply += f"\n🔗 {song['url']}"
-                    await self.safe_chat(reply)
-            else:
-                await self.safe_chat(f"@{user.username} Only Master can skip songs! 🚫")
-
-        elif ml == "!playlist":
-            songs = self.data["songs"]
-            if not songs:
-                await self.safe_chat("Playlist is empty! Master can add with !addsong")
-                return
-            idx = self.data["song_index"] % len(songs)
-            lines = ["🎶 Playlist:"]
-            for i, s in enumerate(songs[:10]):
-                marker = "▶️" if i == idx else f"{i+1}."
-                lines.append(f"{marker} {s['title']} — {s['artist']}")
-            await self.safe_chat("\n".join(lines))
-
-        # ── @summon (everyone) ─────────────────────────────────────────────
+        # ── @summon (everyone) ────────────────────────────────────────────────
 
         elif ml.startswith("@summon "):
             target_name = msg[8:].strip().lstrip("@")
@@ -408,7 +295,7 @@ class HigrhiseBot(BaseBot):
             except Exception as e:
                 print(f"[BOT] @summon error: {e}")
 
-        # ── VIP teleport (VIP + master) ────────────────────────────────────
+        # ── VIP teleport (VIP + master) ───────────────────────────────────────
 
         elif ml == "!vip":
             if is_vip(user.username, self.data) or is_master(user):
@@ -424,7 +311,76 @@ class HigrhiseBot(BaseBot):
             else:
                 await self.safe_chat(f"@{user.username} VIP only! 🚫")
 
-        # ── Master: bot movement ───────────────────────────────────────────
+        # ── Mod commands (Mod + Master) ───────────────────────────────────────
+
+        elif ml == "!roomusers":
+            if not (is_mod(user.username, self.data) or is_master(user)):
+                await self.safe_chat(f"@{user.username} Mod only! 🚫"); return
+            try:
+                resp = await self.highrise.get_room_users()
+                if hasattr(resp, "content"):
+                    lines = [f"👥 Room ({len(resp.content)} users):"]
+                    for ru, pos in resp.content[:15]:
+                        if isinstance(pos, Position):
+                            lines.append(f"  @{ru.username} — ({pos.x:.0f},{pos.y:.1f},{pos.z:.0f})")
+                        else:
+                            lines.append(f"  @{ru.username} — (sitting)")
+                    if len(resp.content) > 15:
+                        lines.append(f"  ... and {len(resp.content)-15} more")
+                    await self.safe_chat("\n".join(lines))
+            except Exception as e:
+                print(f"[BOT] !roomusers error: {e}")
+
+        elif ml.startswith("!find "):
+            if not (is_mod(user.username, self.data) or is_master(user)):
+                await self.safe_chat(f"@{user.username} Mod only! 🚫"); return
+            target_name = msg[6:].strip().lstrip("@")
+            pos = await self._get_user_pos(target_name)
+            if pos is None:
+                await self.safe_chat(f"@{target_name} is not in the room.")
+            elif isinstance(pos, Position):
+                await self.safe_chat(f"📍 @{target_name} → x={pos.x:.1f}, y={pos.y:.2f}, z={pos.z:.1f}")
+            else:
+                await self.safe_chat(f"📍 @{target_name} is sitting on an anchor.")
+
+        elif ml.startswith("!kick "):
+            if not (is_mod(user.username, self.data) or is_master(user)):
+                await self.safe_chat(f"@{user.username} Mod only! 🚫"); return
+            target_name = msg[6:].strip().lstrip("@")
+            try:
+                resp = await self.highrise.get_room_users()
+                if hasattr(resp, "content"):
+                    target_user = next((ru for ru, _ in resp.content
+                                        if ru.username.lower() == target_name.lower()), None)
+                    if not target_user:
+                        await self.safe_chat(f"'{target_name}' is not in the room.")
+                    else:
+                        await self.safe_teleport(target_user.id, GROUND_FLOOR)
+                        await self.safe_chat(f"🚪 @{target_user.username} has been moved to the entrance.")
+            except Exception as e:
+                print(f"[BOT] !kick error: {e}")
+
+        elif ml.startswith("!freeze "):
+            if not (is_mod(user.username, self.data) or is_master(user)):
+                await self.safe_chat(f"@{user.username} Mod only! 🚫"); return
+            target_name = msg[8:].strip().lstrip("@")
+            try:
+                resp = await self.highrise.get_room_users()
+                if hasattr(resp, "content"):
+                    target_user = next((ru for ru, _ in resp.content
+                                        if ru.username.lower() == target_name.lower()), None)
+                    if not target_user:
+                        await self.safe_chat(f"'{target_name}' is not in the room.")
+                    else:
+                        # Teleport to freeze corner 3 times in quick succession
+                        for _ in range(3):
+                            await self.safe_teleport(target_user.id, FREEZE_POS)
+                            await asyncio.sleep(0.5)
+                        await self.safe_chat(f"🧊 @{target_user.username} has been frozen!")
+            except Exception as e:
+                print(f"[BOT] !freeze error: {e}")
+
+        # ── Master: bot movement ──────────────────────────────────────────────
 
         elif ml == "!setbot":
             if not is_master(user):
@@ -464,7 +420,86 @@ class HigrhiseBot(BaseBot):
                 await self.safe_chat("You are sitting on an anchor!"); return
             await self.safe_chat(f"📍 x={pos.x:.1f}, y={pos.y:.2f}, z={pos.z:.1f}")
 
-        # ── Master: setwrap ────────────────────────────────────────────────
+        # ── Master: bot inventory & outfit ────────────────────────────────────
+
+        elif ml == "!inventory":
+            if not is_master(user):
+                await self.safe_chat(f"@{user.username} Master only! 🚫"); return
+            outfit = await self._get_outfit()
+            if not outfit:
+                await self.safe_chat("👗 Bot outfit is empty or couldn't be fetched.")
+            else:
+                lines = [f"👗 Bot Outfit ({len(outfit)} items):"]
+                for item in outfit[:12]:
+                    lines.append(f"  • {item.id}")
+                if len(outfit) > 12:
+                    lines.append(f"  ... and {len(outfit)-12} more")
+                await self.safe_chat("\n".join(lines))
+
+        elif ml == "!emotes":
+            if not is_master(user):
+                await self.safe_chat(f"@{user.username} Master only! 🚫"); return
+            await self.safe_chat(
+                f"🎭 Free emotes ({len(FREE_EMOTES)}):\n"
+                f"{', '.join(FREE_EMOTES)}\n"
+                f"Usage: !emote <name>"
+            )
+
+        elif ml.startswith("!wear "):
+            if not is_master(user):
+                await self.safe_chat(f"@{user.username} Master only! 🚫"); return
+            item_id = msg[6:].strip()
+            if not item_id:
+                await self.safe_chat("Usage: !wear <item_id>"); return
+            try:
+                outfit = await self._get_outfit()
+                # Avoid duplicates
+                if any(i.id == item_id for i in outfit):
+                    await self.safe_chat(f"Already wearing '{item_id}'.")
+                    return
+                new_item = Item(type="clothing", amount=1, id=item_id)
+                new_outfit = outfit + [new_item]
+                await self.highrise.set_outfit(new_outfit)
+                await self.safe_chat(f"✅ Equipped: {item_id}")
+            except Exception as e:
+                await self.safe_chat(f"❌ Couldn't equip '{item_id}': {e}")
+
+        elif ml.startswith("!unwear "):
+            if not is_master(user):
+                await self.safe_chat(f"@{user.username} Master only! 🚫"); return
+            item_id = msg[8:].strip()
+            if not item_id:
+                await self.safe_chat("Usage: !unwear <item_id>"); return
+            try:
+                outfit = await self._get_outfit()
+                new_outfit = [i for i in outfit if i.id != item_id]
+                if len(new_outfit) == len(outfit):
+                    await self.safe_chat(f"'{item_id}' is not in the current outfit.")
+                    return
+                await self.highrise.set_outfit(new_outfit)
+                await self.safe_chat(f"✅ Removed: {item_id}")
+            except Exception as e:
+                await self.safe_chat(f"❌ Couldn't remove '{item_id}': {e}")
+
+        elif ml == "!botinfo":
+            if not is_master(user):
+                await self.safe_chat(f"@{user.username} Master only! 🚫"); return
+            try:
+                resp = await self.highrise.get_room_users()
+                count = len(resp.content) if hasattr(resp, "content") else "?"
+                vip_count = len(self.data["vips"])
+                mod_count = len(self.data.get("mods", {}))
+                wrap_count = len(self.data["wraps"])
+                await self.safe_chat(
+                    f"🤖 ZenBot Status:\n"
+                    f"  👥 Room: {count} users\n"
+                    f"  💎 VIPs: {vip_count}  🛡️ Mods: {mod_count}\n"
+                    f"  📍 Wraps: {wrap_count}"
+                )
+            except Exception as e:
+                await self.safe_chat(f"❌ botinfo error: {e}")
+
+        # ── Master: setwrap ───────────────────────────────────────────────────
 
         elif ml.startswith("!setwrap ") or ml.startswith("/setwrap "):
             if not is_master(user):
@@ -503,7 +538,7 @@ class HigrhiseBot(BaseBot):
             else:
                 await self.safe_chat(f"No wrap '!{keyword}' found.")
 
-        # ── Master: VIP management ─────────────────────────────────────────
+        # ── Master: VIP management ────────────────────────────────────────────
 
         elif ml.startswith("!addvip "):
             if not is_master(user):
@@ -560,44 +595,39 @@ class HigrhiseBot(BaseBot):
                 else:
                     await self.safe_chat("No VIP history yet.")
 
-        # ── Master: song management ────────────────────────────────────────
+        # ── Master: Mod management ────────────────────────────────────────────
 
-        elif ml.startswith("!addsong "):
+        elif ml.startswith("!addmod "):
             if not is_master(user):
                 await self.safe_chat(f"@{user.username} Master only! 🚫"); return
-            raw = msg[9:].strip()
-            parts = [p.strip() for p in raw.split("|")]
-            if len(parts) < 2:
-                await self.safe_chat("Usage: !addsong <title> | <artist> | <soundcloud_url>"); return
-            title = parts[0]; artist = parts[1]; url = parts[2] if len(parts) > 2 else ""
-            add_song(title, artist, url, self.data)
+            target = msg[8:].strip().lstrip("@")
+            if not target:
+                await self.safe_chat("Usage: !addmod <username>"); return
+            already = add_mod(target, user.username, self.data)
             await save_data(self.data)
-            await self.safe_chat(f"✅ Added: {title} by {artist} (song #{len(self.data['songs'])})")
+            if already:
+                await self.safe_chat(f"@{target} is already a Mod.")
+            else:
+                await self.safe_chat(f"🛡️ @{target} is now a Mod!")
 
-        elif ml.startswith("!removesong "):
+        elif ml.startswith("!removemod "):
             if not is_master(user):
                 await self.safe_chat(f"@{user.username} Master only! 🚫"); return
-            try:
-                idx = int(msg[12:].strip()) - 1
-                songs = self.data["songs"]
-                if 0 <= idx < len(songs):
-                    removed = songs[idx]
-                    remove_song(idx, self.data)
-                    await save_data(self.data)
-                    await self.safe_chat(f"✅ Removed: {removed['title']} by {removed['artist']}")
-                else:
-                    await self.safe_chat(f"Invalid number. Playlist has {len(songs)} songs.")
-            except ValueError:
-                await self.safe_chat("Usage: !removesong <number>  (see !playlist for numbers)")
+            target = msg[11:].strip().lstrip("@")
+            found = remove_mod(target, self.data)
+            await save_data(self.data)
+            await self.safe_chat(f"@{target} Mod removed." if found else f"@{target} is not a Mod.")
 
-        elif ml == "!clearqueue":
+        elif ml == "!modlist":
             if not is_master(user):
                 await self.safe_chat(f"@{user.username} Master only! 🚫"); return
-            count = len(get_queue(self.data))
-            self.data["song_queue"] = []
-            await self.safe_chat(f"✅ Queue cleared! ({count} requests removed)" if count else "Queue was already empty.")
+            mods = self.data.get("mods", {})
+            if mods:
+                await self.safe_chat(f"🛡️ Mods ({len(mods)}): {', '.join(mods.keys())}")
+            else:
+                await self.safe_chat("No mods yet. Use !addmod <username>")
 
-        # ── Dynamic wrap teleport (VIP + Master) ───────────────────────────
+        # ── Dynamic wrap teleport (VIP + Master) ──────────────────────────────
         # Must be LAST — catches any !keyword that matches a saved wrap
 
         elif ml.startswith("!") and " " not in ml:

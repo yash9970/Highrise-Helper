@@ -5,35 +5,20 @@ Falls back gracefully to a local JSON file if Render credentials are not availab
 
 Data shape:
 {
-  "vips": { username: { added_by, added_at, history: [{action, by, at}] } },
-  "wraps": { keyword: { x, y, z, facing, set_by, set_at } },
-  "songs": [ { title, artist, url } ],
-  "song_index": 0
+  "vips":  { username: { added_by, added_at, history: [{action, by, at}] } },
+  "wraps": { keyword:  { x, y, z, facing, set_by, set_at } },
+  "mods":  { username: { added_by, added_at } },
 }
 """
 
 import json
 import os
 import aiohttp
-import yt_dlp
 from datetime import datetime
 from pathlib import Path
 
 LOCAL_FILE = Path("bot/bot_data.json")
 RENDER_VAR_KEY = "BOT_DATA"
-
-DEFAULT_SONGS = [
-    {"title": "Blinding Lights", "artist": "The Weeknd", "url": "https://soundcloud.com/theweeknd/blinding-lights"},
-    {"title": "Shape of You", "artist": "Ed Sheeran", "url": "https://soundcloud.com/edsheeran/shape-of-you"},
-    {"title": "Levitating", "artist": "Dua Lipa", "url": "https://soundcloud.com/dualipa/levitating"},
-    {"title": "Stay", "artist": "The Kid LAROI & Justin Bieber", "url": "https://soundcloud.com/thekidlaroi/stay"},
-    {"title": "Good 4 U", "artist": "Olivia Rodrigo", "url": "https://soundcloud.com/oliviarodrigo/good-4-u"},
-    {"title": "Heat Waves", "artist": "Glass Animals", "url": "https://soundcloud.com/glassanimals/heat-waves"},
-    {"title": "Butter", "artist": "BTS", "url": "https://soundcloud.com/bts_official/butter"},
-    {"title": "Dynamite", "artist": "BTS", "url": "https://soundcloud.com/bts_official/dynamite"},
-    {"title": "Watermelon Sugar", "artist": "Harry Styles", "url": "https://soundcloud.com/harrystyles/watermelon-sugar"},
-    {"title": "Peaches", "artist": "Justin Bieber", "url": "https://soundcloud.com/justinbieber/peaches"},
-]
 
 
 def now_str() -> str:
@@ -44,9 +29,7 @@ def _empty_data() -> dict:
     return {
         "vips": {},
         "wraps": {},
-        "songs": DEFAULT_SONGS[:],
-        "song_index": 0,
-        "song_queue": [],
+        "mods": {},
     }
 
 
@@ -59,7 +42,8 @@ def load_data() -> dict:
         try:
             data = json.loads(raw)
             data = _ensure_keys(data)
-            print(f"[STORE] Loaded from Render env var — {len(data['vips'])} VIPs, {len(data['wraps'])} wraps, {len(data['songs'])} songs.")
+            print(f"[STORE] Loaded from Render env var — "
+                  f"{len(data['vips'])} VIPs, {len(data['wraps'])} wraps, {len(data['mods'])} mods.")
             return data
         except Exception as e:
             print(f"[STORE] Could not parse BOT_DATA env var: {e}")
@@ -70,7 +54,8 @@ def load_data() -> dict:
             with open(LOCAL_FILE, "r") as f:
                 data = json.load(f)
             data = _ensure_keys(data)
-            print(f"[STORE] Loaded from local file — {len(data['vips'])} VIPs, {len(data['wraps'])} wraps, {len(data['songs'])} songs.")
+            print(f"[STORE] Loaded from local file — "
+                  f"{len(data['vips'])} VIPs, {len(data['wraps'])} wraps, {len(data['mods'])} mods.")
             return data
         except Exception as e:
             print(f"[STORE] Could not load local file: {e}")
@@ -84,6 +69,9 @@ def _ensure_keys(data: dict) -> dict:
     for key in base:
         if key not in data:
             data[key] = base[key]
+    # Remove legacy song keys if present
+    for legacy in ("songs", "song_index", "song_queue"):
+        data.pop(legacy, None)
     # Migrate old flat VIP format
     for username, v in list(data["vips"].items()):
         if not isinstance(v, dict):
@@ -119,7 +107,8 @@ async def _save_to_render(data: dict):
             async with session.put(url, headers=headers, json=payload,
                                    timeout=aiohttp.ClientTimeout(total=15)) as resp:
                 if resp.status in (200, 201):
-                    print(f"[STORE] Saved to Render env var ✅  ({len(data['vips'])} VIPs, {len(data['wraps'])} wraps)")
+                    print(f"[STORE] Saved to Render env var ✅  "
+                          f"({len(data['vips'])} VIPs, {len(data['wraps'])} wraps, {len(data['mods'])} mods)")
                 else:
                     body = await resp.text()
                     print(f"[STORE] Render API error {resp.status}: {body}")
@@ -159,10 +148,36 @@ def remove_vip(username: str, removed_by: str, data: dict) -> bool:
     return True
 
 
+# ── Mod helpers ───────────────────────────────────────────────────────────────
+
+def is_mod(username: str, data: dict) -> bool:
+    return username.lower() in [u.lower() for u in data.get("mods", {})]
+
+
+def add_mod(username: str, added_by: str, data: dict) -> bool:
+    """Returns True if user was already a mod."""
+    already = is_mod(username, data)
+    data.setdefault("mods", {})[username] = {"added_by": added_by, "added_at": now_str()}
+    return already
+
+
+def remove_mod(username: str, data: dict) -> bool:
+    """Returns True if user was found and removed."""
+    mods = data.setdefault("mods", {})
+    key = next((k for k in mods if k.lower() == username.lower()), None)
+    if not key:
+        return False
+    del mods[key]
+    return True
+
+
 # ── Wrap helpers ──────────────────────────────────────────────────────────────
 
 def set_wrap(keyword: str, x: float, y: float, z: float, facing: str, set_by: str, data: dict):
-    data["wraps"][keyword.lower()] = {"x": x, "y": y, "z": z, "facing": facing, "set_by": set_by, "set_at": now_str()}
+    data["wraps"][keyword.lower()] = {
+        "x": x, "y": y, "z": z, "facing": facing,
+        "set_by": set_by, "set_at": now_str()
+    }
 
 
 def get_wrap(keyword: str, data: dict) -> dict | None:
@@ -174,74 +189,3 @@ def delete_wrap(keyword: str, data: dict) -> bool:
         del data["wraps"][keyword.lower()]
         return True
     return False
-
-
-# ── Song helpers ──────────────────────────────────────────────────────────────
-
-def current_song(data: dict) -> dict:
-    songs = data["songs"]
-    if not songs:
-        return {"title": "No songs", "artist": "-", "url": ""}
-    idx = data["song_index"] % len(songs)
-    return songs[idx]
-
-
-def next_song(data: dict) -> dict:
-    data["song_index"] = (data["song_index"] + 1) % max(len(data["songs"]), 1)
-    return current_song(data)
-
-
-def add_song(title: str, artist: str, url: str, data: dict):
-    data["songs"].append({"title": title, "artist": artist, "url": url})
-
-
-def remove_song(index: int, data: dict) -> bool:
-    if 0 <= index < len(data["songs"]):
-        data["songs"].pop(index)
-        data["song_index"] = data["song_index"] % max(len(data["songs"]), 1)
-        return True
-    return False
-
-
-# ── Song Queue helpers ────────────────────────────────────────────────────────
-
-def queue_song(song: dict, requested_by: str, data: dict):
-    """Add a song to the request queue."""
-    entry = {"title": song["title"], "artist": song["artist"],
-             "url": song.get("url", ""), "requested_by": requested_by}
-    data.setdefault("song_queue", []).append(entry)
-
-
-def dequeue_song(data: dict) -> dict | None:
-    """Pop and return the next queued song, or None if empty."""
-    queue = data.setdefault("song_queue", [])
-    if queue:
-        return queue.pop(0)
-    return None
-
-
-def get_queue(data: dict) -> list:
-    """Return the current song request queue."""
-    return data.setdefault("song_queue", [])
-
-
-def search_soundcloud(query: str) -> dict | None:
-    """Use yt-dlp to perform a live search on SoundCloud (returns top 1 result)."""
-    ydl_opts = {
-        'default_search': 'scsearch1:',
-        'quiet': True,
-        'extract_flat': True,
-    }
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(query, download=False)
-            if 'entries' in info and len(info['entries']) > 0:
-                entry = info['entries'][0]
-                return {
-                    "title": entry.get("title", "Unknown Title"),
-                    "artist": entry.get("uploader", "SoundCloud"),
-                    "url": entry.get("url", "")
-                }
-    except Exception as e:
-        print(f"[STORE] yt-dlp search error: {e}")
-    return None
