@@ -33,9 +33,14 @@ def _empty_data() -> dict:
     }
 
 
-# ── Load ──────────────────────────────────────────────────────────────────────
+_RUNTIME_DATA = None
+
 
 def load_data() -> dict:
+    global _RUNTIME_DATA
+    if _RUNTIME_DATA is not None:
+        return _RUNTIME_DATA
+
     # 1. Try Render env var
     raw = os.environ.get(RENDER_VAR_KEY, "").strip()
     if raw:
@@ -44,6 +49,7 @@ def load_data() -> dict:
             data = _ensure_keys(data)
             print(f"[STORE] Loaded from Render env var — "
                   f"{len(data['vips'])} VIPs, {len(data['wraps'])} wraps, {len(data['mods'])} mods.")
+            _RUNTIME_DATA = data
             return data
         except Exception as e:
             print(f"[STORE] Could not parse BOT_DATA env var: {e}")
@@ -56,12 +62,15 @@ def load_data() -> dict:
             data = _ensure_keys(data)
             print(f"[STORE] Loaded from local file — "
                   f"{len(data['vips'])} VIPs, {len(data['wraps'])} wraps, {len(data['mods'])} mods.")
+            _RUNTIME_DATA = data
             return data
         except Exception as e:
             print(f"[STORE] Could not load local file: {e}")
 
     print("[STORE] No existing data found — starting fresh.")
-    return _empty_data()
+    data = _empty_data()
+    _RUNTIME_DATA = data
+    return data
 
 
 def _ensure_keys(data: dict) -> dict:
