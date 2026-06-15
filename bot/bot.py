@@ -134,7 +134,9 @@ class HigrhiseBot(BaseBot):
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                print(f"[BOT] keepalive error: {e}")
+                print(f"[BOT] Keepalive error (connection silently dropped?): {e}")
+                import os
+                os._exit(1)
 
     # ─── Lifecycle ────────────────────────────────────────────────────────────
 
