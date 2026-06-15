@@ -31,6 +31,7 @@ def _empty_data() -> dict:
         "wraps": {},
         "mods": {},
         "bot_pos": None,
+        "dj_pos": None,
     }
 
 
@@ -211,3 +212,13 @@ def set_bot_pos(x: float, y: float, z: float, facing: str, data: dict):
 
 def get_bot_pos(data: dict) -> dict | None:
     return data.get("bot_pos")
+
+
+def set_dj_pos(x: float, y: float, z: float, facing: str, data: dict):
+    data["dj_pos"] = {
+        "x": x, "y": y, "z": z, "facing": facing, "set_at": now_str()
+    }
+
+
+def get_dj_pos(data: dict) -> dict | None:
+    return data.get("dj_pos")
