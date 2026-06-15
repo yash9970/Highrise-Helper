@@ -435,7 +435,7 @@ class HigrhiseBot(BaseBot):
                 await self.safe_chat("Please stand up first!"); return
             await self.safe_walk_to(pos)
             
-            set_bot_pos(pos.x, pos.y, pos.z, pos.facing, self.data, user.username)
+            set_bot_pos(pos.x, pos.y, pos.z, pos.facing, self.data)
             await save_data(self.data)
             
             await self.safe_chat("✅ Moved to your position and saved it forever, Master!")
