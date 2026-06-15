@@ -65,7 +65,7 @@ def get_dj_position():
 
 @app.route("/djpos", methods=["POST"])
 def set_dj_position():
-    from store import load_data, save_data, set_dj_pos
+    from store import load_data, save_data, set_dj_pos, get_dj_pos
     import asyncio
     
     req = request.get_json()
