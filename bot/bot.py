@@ -9,6 +9,7 @@ from store import (
     is_vip, add_vip, remove_vip,
     is_mod, add_mod, remove_mod,
     set_wrap, get_wrap, delete_wrap,
+    set_bot_pos, get_bot_pos,
     now_str,
 )
 
@@ -142,7 +143,15 @@ class HigrhiseBot(BaseBot):
         # Keepalive loop — runs as a free task so a crash can't kill the connection
         asyncio.create_task(self._keepalive_loop())
         await asyncio.sleep(8)
-        await self.safe_walk_to(DEFAULT_POS, retries=15, delay=8.0)
+        
+        pos_data = get_bot_pos(self.data)
+        if pos_data:
+            target_pos = Position(x=pos_data["x"], y=pos_data["y"], z=pos_data["z"], facing=pos_data["facing"])
+            print(f"[BOT] Found saved bot position. Walking to {target_pos.x:.1f}, {target_pos.y:.1f}, {target_pos.z:.1f}...")
+        else:
+            target_pos = DEFAULT_POS
+            
+        await self.safe_walk_to(target_pos, retries=15, delay=8.0)
         await self.safe_chat("🤖 ZenBot is online! Type !help for commands.")
 
     async def on_user_join(self, user: User, position: Position) -> None:
@@ -423,7 +432,11 @@ class HigrhiseBot(BaseBot):
             if not isinstance(pos, Position):
                 await self.safe_chat("Please stand up first!"); return
             await self.safe_walk_to(pos)
-            await self.safe_chat("✅ Moved to your position, Master!")
+            
+            set_bot_pos(pos.x, pos.y, pos.z, pos.facing, self.data)
+            await save_data(self.data)
+            
+            await self.safe_chat("✅ Moved to your position and saved it forever, Master!")
 
         elif ml == "!home":
             if not is_master(user):

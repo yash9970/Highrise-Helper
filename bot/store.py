@@ -30,6 +30,7 @@ def _empty_data() -> dict:
         "vips": {},
         "wraps": {},
         "mods": {},
+        "bot_pos": None,
     }
 
 
@@ -198,3 +199,15 @@ def delete_wrap(keyword: str, data: dict) -> bool:
         del data["wraps"][keyword.lower()]
         return True
     return False
+
+
+# ── Bot Pos helpers ───────────────────────────────────────────────────────────
+
+def set_bot_pos(x: float, y: float, z: float, facing: str, data: dict):
+    data["bot_pos"] = {
+        "x": x, "y": y, "z": z, "facing": facing, "set_at": now_str()
+    }
+
+
+def get_bot_pos(data: dict) -> dict | None:
+    return data.get("bot_pos")
